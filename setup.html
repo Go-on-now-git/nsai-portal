@@ -178,45 +178,172 @@ h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; }
     <div class="task-num">3</div>
     <div>
       <div class="task-title">Point nsai.tech to the Live Site</div>
-      <div class="task-meta">name.store DNS · 5 minutes · propagates in 10–30 min</div>
+      <div class="task-meta">DNS · 5 min to set up · 10–30 min to propagate</div>
     </div>
   </div>
   <div class="task-body">
-    <div class="step">
-      <div class="step-n">1.</div>
-      <div class="step-text">Go to <a href="https://name.store" target="_blank">name.store</a> → log in with <strong>jut0430@hotmail.com</strong></div>
-    </div>
-    <div class="step">
-      <div class="step-n">2.</div>
-      <div class="step-text">Find <strong>nsai.tech</strong> → click <strong>Manage</strong> → <strong>DNS Records</strong></div>
-    </div>
-    <div class="step">
-      <div class="step-n">3.</div>
-      <div class="step-text">Add these <strong>5 DNS records</strong> (delete any existing A records for @ first):</div>
+
+    <!-- TAB SWITCHER -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button onclick="showDNSTab('namestore')" id="tab-namestore" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--purple);background:rgba(139,92,246,0.15);color:var(--purple2);font-size:0.78rem;font-weight:700;cursor:pointer;">name.store</button>
+      <button onclick="showDNSTab('cloudflare')" id="tab-cloudflare" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted2);font-size:0.78rem;font-weight:700;cursor:pointer;">Cloudflare (easier)</button>
     </div>
 
-    <table class="dns-table">
-      <tr><th>Type</th><th>Host/Name</th><th>Value/Points To</th><th>TTL</th></tr>
-      <tr><td>A</td><td>@</td><td onclick="copyText('185.199.108.153',this)" style="cursor:pointer">185.199.108.153 <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
-      <tr><td>A</td><td>@</td><td onclick="copyText('185.199.109.153',this)" style="cursor:pointer">185.199.109.153 <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
-      <tr><td>A</td><td>@</td><td onclick="copyText('185.199.110.153',this)" style="cursor:pointer">185.199.110.153 <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
-      <tr><td>A</td><td>@</td><td onclick="copyText('185.199.111.153',this)" style="cursor:pointer">185.199.111.153 <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
-      <tr><td>CNAME</td><td>www</td><td onclick="copyText('Go-on-now-git.github.io',this)" style="cursor:pointer">Go-on-now-git.github.io <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
-    </table>
+    <!-- NAME.STORE TAB -->
+    <div id="dns-namestore">
+      <div class="alert" style="margin-bottom:12px;">
+        <strong>Login:</strong> Go to <a href="https://www.name.store/login" target="_blank" style="color:var(--cyan)">name.store/login</a> &nbsp;→&nbsp; email: <strong>jut0430@hotmail.com</strong><br>
+        <span style="color:var(--muted2);font-size:0.75rem;">Can't log in? Try <a href="https://www.name.store/forgot-password" target="_blank" style="color:var(--cyan)">name.store/forgot-password</a> to reset, then check hotmail for the link. Or switch to Cloudflare tab above — only need to log into name.store once to change nameservers.</span>
+      </div>
 
-    <div class="step" style="margin-top:8px;">
-      <div class="step-n">4.</div>
-      <div class="step-text">Save. Wait 10–30 minutes. Then open <a href="https://nsai.tech" target="_blank">nsai.tech</a> — it'll be live.</div>
-    </div>
-    <div class="step">
-      <div class="step-n">5.</div>
-      <div class="step-text">For HTTPS: after DNS propagates, go to <a href="https://github.com/Go-on-now-git/nsai-tech-site/settings/pages" target="_blank">GitHub Pages settings</a> → check <strong>"Enforce HTTPS"</strong></div>
+      <div class="step">
+        <div class="step-n">1.</div>
+        <div class="step-text">After login, click <strong>My Domains</strong> → find <strong>nsai.tech</strong> → click <strong>Manage</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-n">2.</div>
+        <div class="step-text">Look for <strong>DNS</strong> or <strong>DNS Zone Records</strong> in the left sidebar or tabs. Click it.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">3.</div>
+        <div class="step-text">Delete any existing <strong>A records</strong> for the root (<strong>@</strong> or blank host). Then add these 5 records one at a time. For each one, click <strong>Add Record</strong>:</div>
+      </div>
+
+      <!-- Record-by-record instructions -->
+      <div style="margin:10px 0;display:flex;flex-direction:column;gap:8px;">
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Record 1 of 5</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem;">
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">TYPE field</span><span style="color:var(--yellow);font-weight:700;">A</span></div>
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">HOST / Sub-Domain field</span><span onclick="copyText('@',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">@ <span style="font-size:0.6rem;color:var(--muted)">(tap to copy)</span></span></div>
+            <div style="grid-column:1/-1;"><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">VALUE / Points To / Destination field</span><span onclick="copyText('185.199.108.153',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">185.199.108.153 <span style="font-size:0.6rem;color:var(--muted)">(tap to copy)</span></span></div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Record 2 of 5</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem;">
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">TYPE</span><span style="color:var(--yellow);font-weight:700;">A</span></div>
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">HOST / Sub-Domain</span><span onclick="copyText('@',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">@ <span style="font-size:0.6rem;color:var(--muted)">(tap)</span></span></div>
+            <div style="grid-column:1/-1;"><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">VALUE / Points To</span><span onclick="copyText('185.199.109.153',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">185.199.109.153 <span style="font-size:0.6rem;color:var(--muted)">(tap)</span></span></div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Record 3 of 5</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem;">
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">TYPE</span><span style="color:var(--yellow);font-weight:700;">A</span></div>
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">HOST / Sub-Domain</span><span onclick="copyText('@',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">@ <span style="font-size:0.6rem;color:var(--muted)">(tap)</span></span></div>
+            <div style="grid-column:1/-1;"><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">VALUE / Points To</span><span onclick="copyText('185.199.110.153',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">185.199.110.153 <span style="font-size:0.6rem;color:var(--muted)">(tap)</span></span></div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Record 4 of 5</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem;">
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">TYPE</span><span style="color:var(--yellow);font-weight:700;">A</span></div>
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">HOST / Sub-Domain</span><span onclick="copyText('@',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">@ <span style="font-size:0.6rem;color:var(--muted)">(tap)</span></span></div>
+            <div style="grid-column:1/-1;"><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">VALUE / Points To</span><span onclick="copyText('185.199.111.153',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">185.199.111.153 <span style="font-size:0.6rem;color:var(--muted)">(tap)</span></span></div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:0.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Record 5 of 5</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem;">
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">TYPE</span><span style="color:var(--yellow);font-weight:700;">CNAME</span></div>
+            <div><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">HOST / Sub-Domain</span><span onclick="copyText('www',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">www <span style="font-size:0.6rem;color:var(--muted)">(tap)</span></span></div>
+            <div style="grid-column:1/-1;"><span style="color:var(--muted);display:block;font-size:0.68rem;margin-bottom:3px;">VALUE / Points To / Destination</span><span onclick="copyText('Go-on-now-git.github.io',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">Go-on-now-git.github.io <span style="font-size:0.6rem;color:var(--muted)">(tap)</span></span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="step">
+        <div class="step-n">4.</div>
+        <div class="step-text">Hit <strong>Save</strong> after each record (or once at the end if there's a bulk save). Then wait 10–30 min and check <a href="https://nsai.tech" target="_blank">nsai.tech</a>.</div>
+      </div>
+
+      <a href="https://www.name.store/login" target="_blank" class="action-btn">Log into name.store →</a>
     </div>
 
-    <a href="https://name.store" target="_blank" class="action-btn">Open name.store →</a>
-    <a href="https://github.com/Go-on-now-git/nsai-tech-site/settings/pages" target="_blank" class="action-btn secondary" style="margin-left:8px;">GitHub Pages Settings</a>
-    <button class="mark-btn" onclick="markDone(3)">Mark as done ✓</button>
-    <div class="done-check">✓ DNS configured — site will be live within 30 min</div>
+    <!-- CLOUDFLARE TAB -->
+    <div id="dns-cloudflare" style="display:none;">
+      <div class="alert">
+        <strong>Why Cloudflare?</strong> Free, faster DNS, better UI. You only need name.store to change nameservers once — then manage everything in Cloudflare forever.
+      </div>
+
+      <div class="step">
+        <div class="step-n">1.</div>
+        <div class="step-text">Go to <a href="https://dash.cloudflare.com/sign-up" target="_blank">dash.cloudflare.com/sign-up</a> → create a free account with <strong>jutterfly717@gmail.com</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-n">2.</div>
+        <div class="step-text">Click <strong>Add a Site</strong> → type <strong>nsai.tech</strong> → choose the <strong>Free plan</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-n">3.</div>
+        <div class="step-text">Cloudflare will scan existing records. Then it gives you <strong>2 Cloudflare nameservers</strong> (looks like <code>xxx.ns.cloudflare.com</code>). Copy both.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">4.</div>
+        <div class="step-text">Log into <a href="https://www.name.store/login" target="_blank">name.store</a> → nsai.tech → <strong>Nameservers</strong> → replace existing nameservers with the 2 Cloudflare ones. Save.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">5.</div>
+        <div class="step-text">Back in Cloudflare → <strong>DNS</strong> tab → add these records (if not already imported):</div>
+      </div>
+
+      <div style="margin:10px 0;display:flex;flex-direction:column;gap:6px;font-size:0.78rem;">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <span style="color:var(--yellow);font-weight:700;">A</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">Name:</span> <span onclick="copyText('@',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">@ (tap)</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">IPv4:</span> <span onclick="copyText('185.199.108.153',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">185.199.108.153 (tap)</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <span style="color:var(--yellow);font-weight:700;">A</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">Name:</span> <span onclick="copyText('@',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">@ (tap)</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">IPv4:</span> <span onclick="copyText('185.199.109.153',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">185.199.109.153 (tap)</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <span style="color:var(--yellow);font-weight:700;">A</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">Name:</span> <span onclick="copyText('@',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">@ (tap)</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">IPv4:</span> <span onclick="copyText('185.199.110.153',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">185.199.110.153 (tap)</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <span style="color:var(--yellow);font-weight:700;">A</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">Name:</span> <span onclick="copyText('@',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">@ (tap)</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">IPv4:</span> <span onclick="copyText('185.199.111.153',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">185.199.111.153 (tap)</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;">
+          <span style="color:var(--yellow);font-weight:700;">CNAME</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">Name:</span> <span onclick="copyText('www',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">www (tap)</span> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">Target:</span> <span onclick="copyText('Go-on-now-git.github.io',this)" style="color:var(--cyan);cursor:pointer;font-family:monospace;">Go-on-now-git.github.io (tap)</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-n">6.</div>
+        <div class="step-text">For each record: set <strong>Proxy status → DNS only</strong> (grey cloud, not orange). GitHub Pages requires direct DNS. Save.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">7.</div>
+        <div class="step-text">Nameserver change takes up to 24 hours but usually 30 min. Then check <a href="https://nsai.tech" target="_blank">nsai.tech</a>.</div>
+      </div>
+
+      <a href="https://dash.cloudflare.com/sign-up" target="_blank" class="action-btn">Sign up for Cloudflare →</a>
+      <a href="https://www.name.store/login" target="_blank" class="action-btn secondary" style="margin-left:8px;">name.store Login</a>
+    </div>
+
+    <!-- SHARED FOOTER -->
+    <div class="step" style="margin-top:14px;">
+      <div class="step-n">✓</div>
+      <div class="step-text">After DNS propagates: go to <a href="https://github.com/Go-on-now-git/nsai-tech-site/settings/pages" target="_blank">GitHub Pages settings</a> → enable <strong>"Enforce HTTPS"</strong></div>
+    </div>
+
+    <a href="https://github.com/Go-on-now-git/nsai-tech-site/settings/pages" target="_blank" class="action-btn secondary" style="margin-top:12px;">GitHub Pages Settings</a>
+    <button class="mark-btn" onclick="markDone(3)" style="display:block;margin-top:10px;">Mark as done ✓</button>
+    <div class="done-check">✓ DNS configured — nsai.tech live within 30 min</div>
   </div>
 </div>
 
@@ -251,10 +378,20 @@ function updateProgress() {
 
 function copyText(text, el) {
   navigator.clipboard.writeText(text).then(() => {
-    const orig = el.innerHTML;
     el.style.color = 'var(--green)';
     setTimeout(() => { el.style.color = ''; }, 1200);
   });
+}
+
+function showDNSTab(tab) {
+  document.getElementById('dns-namestore').style.display = tab === 'namestore' ? '' : 'none';
+  document.getElementById('dns-cloudflare').style.display = tab === 'cloudflare' ? '' : 'none';
+  document.getElementById('tab-namestore').style.borderColor = tab === 'namestore' ? 'var(--purple)' : 'var(--border2)';
+  document.getElementById('tab-namestore').style.background = tab === 'namestore' ? 'rgba(139,92,246,0.15)' : 'transparent';
+  document.getElementById('tab-namestore').style.color = tab === 'namestore' ? 'var(--purple2)' : 'var(--muted2)';
+  document.getElementById('tab-cloudflare').style.borderColor = tab === 'cloudflare' ? 'var(--cyan)' : 'var(--border2)';
+  document.getElementById('tab-cloudflare').style.background = tab === 'cloudflare' ? 'rgba(34,211,238,0.1)' : 'transparent';
+  document.getElementById('tab-cloudflare').style.color = tab === 'cloudflare' ? 'var(--cyan)' : 'var(--muted2)';
 }
 
 // Restore state
