@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NUB — NSAI Control</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #050507;
+  --card: #0d0d12;
+  --card2: #13131a;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --purple: #8b5cf6;
+  --purple2: #a78bfa;
+  --cyan: #22d3ee;
+  --green: #4ade80;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --white: #f8fafc;
+  --muted: #6b7280;
+  --muted2: #9ca3af;
+}
+html { background: var(--bg); height: 100%; }
+body { color: var(--white); font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; min-height: 100vh; padding: 0 0 40px; display: flex; flex-direction: column; }
+
+/* TOP BAR */
+.topbar { padding: 18px 20px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: rgba(13,13,18,0.95); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); }
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.nub-logo { font-size: 1.3rem; font-weight: 900; letter-spacing: -0.02em; background: linear-gradient(135deg, var(--purple2), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.nub-sub { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s ease-in-out infinite; }
+.status-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); animation: none; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.back-link { color: var(--muted); font-size: 0.75rem; text-decoration: none; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; }
+.back-link:hover { color: var(--white); border-color: var(--border2); }
+
+/* STATS */
+.stats-row { display: flex; gap: 0; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+.stats-row::-webkit-scrollbar { display: none; }
+.stat-card { flex: 1; min-width: 80px; padding: 14px 16px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+.stat-card:last-child { border-right: none; }
+.stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.stat-num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.stat-num.g { color: var(--green); }
+.stat-num.y { color: var(--yellow); }
+.stat-num.r { color: var(--red); }
+.stat-num.p { color: var(--purple2); }
+
+/* CRITICAL BANNER */
+.crit-banner { background: rgba(248,113,113,0.06); border-bottom: 1px solid rgba(248,113,113,0.2); padding: 10px 20px; display: none; }
+.crit-banner.show { display: block; }
+.crit-title { font-size: 0.6rem; color: var(--red); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px; }
+.crit-item { font-size: 0.75rem; color: #fca5a5; padding: 2px 0; }
+
+/* CONTENT */
+.content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 20px; max-width: 640px; width: 100%; margin: 0 auto; }
+
+.section-title { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 10px; }
+
+/* QUICK BUTTONS */
+.btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media(min-width: 500px) { .btn-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.qbtn { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 12px; cursor: pointer; text-align: left; transition: all 0.12s; display: flex; flex-direction: column; gap: 6px; -webkit-tap-highlight-color: transparent; user-select: none; }
+.qbtn:hover { border-color: var(--purple); background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(34,211,238,0.04)); }
+.qbtn:active, .qbtn.firing { transform: scale(0.96); border-color: var(--cyan); background: rgba(34,211,238,0.06); }
+.qbtn.done { border-color: var(--green); background: rgba(74,222,128,0.05); }
+.qbtn-icon { font-size: 1.6rem; line-height: 1; }
+.qbtn-name { font-size: 0.8rem; font-weight: 700; color: var(--white); }
+.qbtn-desc { font-size: 0.65rem; color: var(--muted); line-height: 1.4; }
+
+/* INPUT */
+.input-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; transition: border-color 0.15s; }
+.input-wrap:focus-within { border-color: var(--purple); }
+textarea#cmd { width: 100%; background: transparent; border: none; padding: 14px 16px 10px; color: var(--white); font-size: 0.9rem; font-family: inherit; resize: none; outline: none; line-height: 1.5; }
+textarea#cmd::placeholder { color: var(--muted); }
+.input-footer { display: flex; align-items: center; padding: 0 12px 10px; gap: 10px; }
+.tg-toggle { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; color: var(--muted); cursor: pointer; }
+.toggle { position: relative; width: 34px; height: 18px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track { position: absolute; inset: 0; background: var(--card2); border: 1px solid var(--border2); border-radius: 18px; transition: 0.2s; }
+.toggle input:checked ~ .toggle-track { background: rgba(139,92,246,0.25); border-color: var(--purple); }
+.toggle-thumb { position: absolute; width: 12px; height: 12px; background: var(--muted); border-radius: 50%; top: 2px; left: 2px; transition: 0.2s; }
+.toggle input:checked ~ .toggle-track + .toggle-thumb, .toggle input:checked + .toggle-track + .toggle-thumb { transform: none; }
+.toggle input:checked ~ .toggle-thumb { left: 18px; background: var(--purple2); }
+.fire-btn { margin-left: auto; background: linear-gradient(135deg, var(--purple), #6d28d9); border: none; border-radius: 10px; color: white; font-weight: 800; font-size: 0.82rem; padding: 8px 22px; cursor: pointer; letter-spacing: 0.02em; transition: all 0.12s; }
+.fire-btn:hover { background: linear-gradient(135deg, var(--purple2), var(--purple)); transform: translateY(-1px); }
+.fire-btn:active { transform: scale(0.97); }
+.fire-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+/* OUTPUT */
+.output-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; min-height: 90px; font-size: 0.8rem; line-height: 1.7; color: var(--muted); white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; }
+.output-card.live { color: var(--white); border-color: rgba(139,92,246,0.3); }
+.output-card.err { color: var(--red); border-color: rgba(248,113,113,0.25); }
+.output-card.ok { border-color: rgba(74,222,128,0.2); }
+
+/* SPINNER */
+.spin { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--cyan); border-radius: 50%; animation: s 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes s { to { transform: rotate(360deg); } }
+
+/* LAST ACTIVITY */
+.activity-list { display: flex; flex-direction: column; gap: 6px; }
+.act-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; }
+.act-type { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--purple2); background: rgba(139,92,246,0.1); padding: 2px 6px; border-radius: 4px; white-space: nowrap; margin-top: 2px; }
+.act-title { font-size: 0.75rem; color: var(--white); }
+.act-time { font-size: 0.62rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="nub-logo">NUB</div>
+      <div class="nub-sub">Control Panel</div>
+    </div>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+  <a href="/" class="back-link">← Portal</a>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-label">Active</div><div class="stat-num g" id="sActive">—</div></div>
+  <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-num y" id="sPending">—</div></div>
+  <div class="stat-card"><div class="stat-label">Loops</div><div class="stat-num p" id="sLoops">—</div></div>
+  <div class="stat-card"><div class="stat-label">Refresh</div><div class="stat-num" style="font-size:1.1rem;cursor:pointer;color:var(--muted2)" onclick="loadStatus()">↻</div></div>
+</div>
+
+<div class="crit-banner" id="critBanner">
+  <div class="crit-title">🔴 Critical Open Loops</div>
+  <div id="critList"></div>
+</div>
+
+<div class="content">
+
+  <div>
+    <div class="section-title">Quick Fire</div>
+    <div class="btn-grid">
+      <button class="qbtn" onclick="fire(this,'Run nub_state summary — give me a concise session overview: active tasks, pending tasks, critical open loops, and top 3 things needing attention right now')">
+        <div class="qbtn-icon">📊</div>
+        <div class="qbtn-name">Status</div>
+        <div class="qbtn-desc">Full situation report</div>
+      </button>
+      <button class="qbtn" onclick="fire(this,'List all active and pending tasks from nub_state — summarize each with its status and what action is needed')">
+        <div class="qbtn-icon">📋</div>
+        <div class="qbtn-name">Tasks</div>
+        <div class="qbtn-desc">What's on the board</div>
+      </button>
+      <button class="qbtn" onclick="fire(this,'List all unresolved open loops from nub_state sorted by priority — critical first, tell me what action each needs')">
+        <div class="qbtn-icon">🔄</div>
+        <div class="qbtn-name">Open Loops</div>
+        <div class="qbtn-desc">Unresolved items</div>
+      </button>
+      <button class="qbtn" onclick="fire(this,'Check my client pipeline from nub_state — who needs follow-up right now, what is the next move for each')">
+        <div class="qbtn-icon">💼</div>
+        <div class="qbtn-name">Clients</div>
+        <div class="qbtn-desc">Pipeline & follow-ups</div>
+      </button>
+      <button class="qbtn" onclick="fire(this,'Run a full PM2 system health check — list all processes, flag any that are down or restarting, and check disk space')">
+        <div class="qbtn-icon">⚙️</div>
+        <div class="qbtn-name">System</div>
+        <div class="qbtn-desc">PM2 health check</div>
+      </button>
+      <button class="qbtn" onclick="fire(this,'Use ollama_think: What are the top 3 highest-leverage actions I can take today based on my open loops and client pipeline? Be direct, no filler.')">
+        <div class="qbtn-icon">🎯</div>
+        <div class="qbtn-name">Today\'s Focus</div>
+        <div class="qbtn-desc">AI-prioritized actions</div>
+      </button>
+      <button class="qbtn" onclick="fire(this,'Check the coin appraisal app at http://localhost:3100/api/health and give me the status. If down, diagnose why and tell me how to fix it.')">
+        <div class="qbtn-icon">🪙</div>
+        <div class="qbtn-name">Coin App</div>
+        <div class="qbtn-desc">Revenue app status</div>
+      </button>
+      <button class="qbtn" onclick="fire(this,'What cron jobs are currently scheduled? Check their last run status and report any failures or missed runs.')">
+        <div class="qbtn-icon">⏱️</div>
+        <div class="qbtn-name">Cron Jobs</div>
+        <div class="qbtn-desc">Scheduled task status</div>
+      </button>
+      <button class="qbtn" onclick="fire(this,'Check contest entry logs at /root/.openclaw/workspace/logs/contest-submissions.jsonl — how many entries have been submitted, any failures?')">
+        <div class="qbtn-icon">🏆</div>
+        <div class="qbtn-name">Contests</div>
+        <div class="qbtn-desc">Entry submission log</div>
+      </button>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-title">Command NUB</div>
+    <div class="input-wrap">
+      <textarea id="cmd" rows="3" placeholder="Tell NUB anything...&#10;e.g. Follow up with Austin Rudd, check the Chianina deal status, search for X..."></textarea>
+      <div class="input-footer">
+        <label class="tg-toggle">
+          <div class="toggle">
+            <input type="checkbox" id="tgToggle" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </div>
+          Telegram reply
+        </label>
+        <button class="fire-btn" id="fireBtn" onclick="sendCmd()">FIRE</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-title">Response</div>
+    <div class="output-card" id="output">Tap a button or enter a command to fire...</div>
+  </div>
+
+  <div id="activitySection" style="display:none">
+    <div class="section-title">Recent Activity</div>
+    <div class="activity-list" id="activityList"></div>
+  </div>
+
+</div>
+
+<script>
+async function loadStatus() {
+  try {
+    const r = await fetch('/nub/status');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+
+    document.getElementById('sActive').textContent = d.tasks?.active ?? '?';
+    document.getElementById('sPending').textContent = d.tasks?.pending ?? '?';
+    const loops = d.open_loops ?? 0;
+    const lEl = document.getElementById('sLoops');
+    lEl.textContent = loops;
+    lEl.className = 'stat-num ' + (loops > 6 ? 'r' : loops > 3 ? 'y' : 'g');
+    document.getElementById('statusDot').classList.remove('offline');
+
+    const crit = d.critical_loops || [];
+    const banner = document.getElementById('critBanner');
+    if (crit.length) {
+      banner.classList.add('show');
+      document.getElementById('critList').innerHTML = crit.map(c => `<div class="crit-item">⚠️ ${c}</div>`).join('');
+    } else {
+      banner.classList.remove('show');
+    }
+
+    const acts = d.recent_activity || [];
+    if (acts.length) {
+      document.getElementById('activitySection').style.display = 'block';
+      document.getElementById('activityList').innerHTML = acts.map(a =>
+        `<div class="act-item"><span class="act-type">${a.type}</span><div><div class="act-title">${a.title}</div><div class="act-time">${a.created_at || ''}</div></div></div>`
+      ).join('');
+    }
+  } catch(e) {
+    document.getElementById('statusDot').classList.add('offline');
+  }
+}
+
+async function fire(btn, message) {
+  const tg = document.getElementById('tgToggle').checked;
+  const out = document.getElementById('output');
+
+  document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('firing','done'));
+  btn.classList.add('firing');
+  out.className = 'output-card';
+  out.innerHTML = '<span class="spin"></span>Firing to NUB...';
+
+  try {
+    const r = await fetch('/nub/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, silent: !tg })
+    });
+    const d = await r.json();
+    btn.classList.remove('firing');
+    btn.classList.add('done');
+    setTimeout(() => btn.classList.remove('done'), 2000);
+
+    if (d.ok) {
+      out.className = 'output-card live';
+      out.textContent = d.output || (tg ? '✓ Fired — NUB is working, check Telegram' : '✓ Done');
+    } else {
+      out.className = 'output-card err';
+      out.textContent = '✗ ' + (d.error || 'Unknown error');
+    }
+  } catch(e) {
+    btn.classList.remove('firing');
+    out.className = 'output-card err';
+    out.textContent = '✗ Network error: ' + e.message;
+  }
+}
+
+async function sendCmd() {
+  const msg = document.getElementById('cmd').value.trim();
+  if (!msg) return;
+  const tg = document.getElementById('tgToggle').checked;
+  const btn = document.getElementById('fireBtn');
+  const out = document.getElementById('output');
+
+  btn.disabled = true; btn.textContent = '...';
+  out.className = 'output-card';
+  out.innerHTML = '<span class="spin"></span>Firing to NUB...';
+
+  try {
+    const r = await fetch('/nub/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, silent: !tg })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      out.className = 'output-card live';
+      out.textContent = d.output || (tg ? '✓ Fired — check Telegram for NUB\'s response' : '✓ Done');
+    } else {
+      out.className = 'output-card err';
+      out.textContent = '✗ ' + (d.error || 'Unknown error');
+    }
+  } catch(e) {
+    out.className = 'output-card err';
+    out.textContent = '✗ Network error: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'FIRE';
+}
+
+document.getElementById('cmd').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCmd(); }
+});
+
+loadStatus();
+</script>
+</body>
+</html>
