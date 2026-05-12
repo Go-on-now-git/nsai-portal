@@ -91,8 +91,8 @@ app.post('/nub/run', (req, res) => {
   const { message, silent } = req.body;
   if (!message) return res.status(400).json({ error: 'No message' });
 
-  const args = ['agent', '-m', message, '--timeout', '120'];
-  if (!silent) args.push('--deliver', '--to', '7740283491');
+  const args = ['agent', '-m', message, '--to', '7740283491', '--timeout', '120'];
+  if (!silent) args.push('--deliver');
 
   execFile('openclaw', args, { timeout: 130000 }, (err, stdout, stderr) => {
     if (err) return res.json({ ok: false, error: err.message, detail: stderr });
