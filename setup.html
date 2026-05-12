@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>NSAI Launch Setup</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #050507; --card: #0d0d12; --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.15); --purple: #8b5cf6; --purple2: #a78bfa;
+  --cyan: #22d3ee; --green: #4ade80; --yellow: #fbbf24; --red: #f87171;
+  --white: #f8fafc; --muted: #6b7280; --muted2: #9ca3af;
+}
+html { background: var(--bg); }
+body { color: var(--white); font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; min-height: 100vh; padding: 20px 16px 60px; max-width: 600px; margin: 0 auto; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 24px; }
+.logo { font-size: 1rem; font-weight: 800; background: linear-gradient(135deg, var(--purple2), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.back { color: var(--muted); font-size: 0.75rem; text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; }
+.back:hover { color: var(--white); }
+
+h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; }
+.subtitle { color: var(--muted2); font-size: 0.85rem; margin-bottom: 28px; line-height: 1.5; }
+
+.progress { display: flex; gap: 6px; margin-bottom: 28px; }
+.p-step { flex: 1; height: 4px; border-radius: 4px; background: var(--border2); transition: background 0.3s; }
+.p-step.done { background: var(--green); }
+.p-step.active { background: var(--purple); }
+
+.task-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+.task-card.done { border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.04); }
+.task-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.task-num { width: 28px; height: 28px; border-radius: 50%; background: rgba(139,92,246,0.2); border: 1px solid var(--purple); color: var(--purple2); font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.task-card.done .task-num { background: rgba(74,222,128,0.2); border-color: var(--green); color: var(--green); }
+.task-title { font-weight: 700; font-size: 1rem; }
+.task-meta { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+.task-body { font-size: 0.82rem; color: var(--muted2); line-height: 1.7; }
+
+.step { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.step:last-child { border-bottom: none; }
+.step-n { color: var(--purple2); font-weight: 700; font-size: 0.8rem; min-width: 18px; padding-top: 1px; }
+.step-text { font-size: 0.82rem; color: var(--muted2); line-height: 1.6; }
+.step-text strong { color: var(--white); }
+.step-text a { color: var(--cyan); text-decoration: none; }
+.step-text a:hover { text-decoration: underline; }
+
+.code-block { background: rgba(255,255,255,0.04); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 12px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.78rem; color: var(--cyan); margin: 8px 0; position: relative; cursor: pointer; }
+.code-block:hover { border-color: var(--purple); }
+.copy-hint { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.65rem; color: var(--muted); font-family: inherit; }
+.copied { color: var(--green) !important; }
+
+.action-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, var(--purple), #6d28d9); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.85rem; padding: 11px 20px; cursor: pointer; text-decoration: none; margin-top: 12px; }
+.action-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.action-btn.secondary { background: transparent; border: 1px solid var(--border2); color: var(--muted2); }
+.action-btn.secondary:hover { color: var(--white); border-color: var(--purple); }
+
+.done-check { display: none; align-items: center; gap: 8px; color: var(--green); font-size: 0.82rem; font-weight: 600; margin-top: 12px; }
+.task-card.done .done-check { display: flex; }
+.task-card.done .action-btn:not(.secondary) { display: none; }
+
+.mark-btn { background: transparent; border: 1px solid var(--border2); border-radius: 8px; color: var(--muted); font-size: 0.72rem; padding: 5px 12px; cursor: pointer; margin-top: 10px; }
+.mark-btn:hover { color: var(--green); border-color: var(--green); }
+
+.dns-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.78rem; }
+.dns-table th { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.65rem; padding: 6px 8px; border-bottom: 1px solid var(--border2); text-align: left; }
+.dns-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-size: 0.75rem; }
+.dns-table td:first-child { color: var(--yellow); font-family: inherit; font-weight: 600; }
+
+.alert { background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; padding: 12px 14px; font-size: 0.78rem; color: #fde68a; margin: 12px 0; line-height: 1.6; }
+.alert strong { color: var(--yellow); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">NSAI LAUNCH SETUP</div>
+  <a href="/nub" class="back">← NUB</a>
+</div>
+
+<h1>3 steps to go live</h1>
+<p class="subtitle">Everything below is free. Do these in order — takes about 15 minutes total.</p>
+
+<div class="progress">
+  <div class="p-step active" id="p1"></div>
+  <div class="p-step" id="p2"></div>
+  <div class="p-step" id="p3"></div>
+</div>
+
+<!-- STEP 1: FORMSUBMIT ACTIVATION -->
+<div class="task-card" id="task1">
+  <div class="task-header">
+    <div class="task-num">1</div>
+    <div>
+      <div class="task-title">Activate Contact Form</div>
+      <div class="task-meta">Free · No account · 2 minutes</div>
+    </div>
+  </div>
+  <div class="task-body">
+    <p style="margin-bottom:12px;">The contact form on nsai.tech is already wired up. You just need to click one activation link that gets emailed to you.</p>
+    <div class="step">
+      <div class="step-n">1.</div>
+      <div class="step-text">Go to <a href="https://nsai.tech/#contact" target="_blank">nsai.tech/#contact</a> (once DNS is live) or test it here using the form below.</div>
+    </div>
+    <div class="step">
+      <div class="step-n">2.</div>
+      <div class="step-text">Submit the form once with <strong>your own name and email</strong> (jutterfly717@gmail.com). This triggers the activation.</div>
+    </div>
+    <div class="step">
+      <div class="step-n">3.</div>
+      <div class="step-text">Check <strong>jutterfly717@gmail.com</strong> — you'll get an email from FormSubmit with a confirmation link. <strong>Click it.</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-n">4.</div>
+      <div class="step-text">Done. Every future form submission from nsai.tech lands directly in your Gmail. No dashboard, no login, no fees.</div>
+    </div>
+
+    <div class="alert">
+      <strong>Test right now:</strong> Fill out this form — it'll go to your Gmail and trigger the activation email.
+    </div>
+
+    <form action="https://formsubmit.co/jutterfly717@gmail.com" method="POST" target="_blank" style="display:flex;flex-direction:column;gap:10px;margin-top:4px;" onsubmit="markDone(1)">
+      <input type="hidden" name="_subject" value="✅ NSAI Form Activation Test">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_template" value="table">
+      <input type="text" name="name" value="Justin Perry / NSAI" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#f8fafc;font-family:inherit;font-size:0.85rem;outline:none;">
+      <input type="email" name="email" value="jutterfly717@gmail.com" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#f8fafc;font-family:inherit;font-size:0.85rem;outline:none;">
+      <input type="text" name="message" value="Activation test from setup page" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#f8fafc;font-family:inherit;font-size:0.85rem;outline:none;">
+      <button type="submit" class="action-btn" style="margin-top:4px;">Send Activation Test →</button>
+    </form>
+    <div class="done-check">✓ Form activated — check your Gmail for the confirmation link</div>
+  </div>
+</div>
+
+<!-- STEP 2: CALENDLY -->
+<div class="task-card" id="task2">
+  <div class="task-header">
+    <div class="task-num">2</div>
+    <div>
+      <div class="task-title">Create Calendly Booking Link</div>
+      <div class="task-meta">Free · 5 minutes</div>
+    </div>
+  </div>
+  <div class="task-body">
+    <div class="step">
+      <div class="step-n">1.</div>
+      <div class="step-text">Go to <a href="https://calendly.com/signup" target="_blank">calendly.com/signup</a> — sign up with <strong>jutterfly717@gmail.com</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-n">2.</div>
+      <div class="step-text">When asked for your link name, enter: <span onclick="copyText('nsai-tech', this)" class="code-block" style="display:inline-block;cursor:pointer;padding:2px 8px;margin:0 2px;">nsai-tech <span class="copy-hint">tap to copy</span></span></div>
+    </div>
+    <div class="step">
+      <div class="step-n">3.</div>
+      <div class="step-text">Create a new event type → <strong>"Free 30-Min Strategy Call"</strong> → set duration to 30 min</div>
+    </div>
+    <div class="step">
+      <div class="step-n">4.</div>
+      <div class="step-text">Set the event URL slug to: <span onclick="copyText('30min', this)" class="code-block" style="display:inline-block;cursor:pointer;padding:2px 8px;margin:0 2px;">30min <span class="copy-hint">tap to copy</span></span></div>
+    </div>
+    <div class="step">
+      <div class="step-n">5.</div>
+      <div class="step-text">Your booking link will be: <strong style="color:var(--cyan);">calendly.com/nsai-tech/30min</strong> — already wired into the site button ✓</div>
+    </div>
+    <div class="step">
+      <div class="step-n">6.</div>
+      <div class="step-text">Connect your Google Calendar so bookings block your real schedule automatically.</div>
+    </div>
+    <a href="https://calendly.com/signup" target="_blank" class="action-btn">Open Calendly Signup →</a>
+    <button class="mark-btn" onclick="markDone(2)">Mark as done ✓</button>
+    <div class="done-check">✓ Calendly live at calendly.com/nsai-tech/30min</div>
+  </div>
+</div>
+
+<!-- STEP 3: DNS -->
+<div class="task-card" id="task3">
+  <div class="task-header">
+    <div class="task-num">3</div>
+    <div>
+      <div class="task-title">Point nsai.tech to the Live Site</div>
+      <div class="task-meta">name.store DNS · 5 minutes · propagates in 10–30 min</div>
+    </div>
+  </div>
+  <div class="task-body">
+    <div class="step">
+      <div class="step-n">1.</div>
+      <div class="step-text">Go to <a href="https://name.store" target="_blank">name.store</a> → log in with <strong>jut0430@hotmail.com</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-n">2.</div>
+      <div class="step-text">Find <strong>nsai.tech</strong> → click <strong>Manage</strong> → <strong>DNS Records</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-n">3.</div>
+      <div class="step-text">Add these <strong>5 DNS records</strong> (delete any existing A records for @ first):</div>
+    </div>
+
+    <table class="dns-table">
+      <tr><th>Type</th><th>Host/Name</th><th>Value/Points To</th><th>TTL</th></tr>
+      <tr><td>A</td><td>@</td><td onclick="copyText('185.199.108.153',this)" style="cursor:pointer">185.199.108.153 <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
+      <tr><td>A</td><td>@</td><td onclick="copyText('185.199.109.153',this)" style="cursor:pointer">185.199.109.153 <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
+      <tr><td>A</td><td>@</td><td onclick="copyText('185.199.110.153',this)" style="cursor:pointer">185.199.110.153 <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
+      <tr><td>A</td><td>@</td><td onclick="copyText('185.199.111.153',this)" style="cursor:pointer">185.199.111.153 <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
+      <tr><td>CNAME</td><td>www</td><td onclick="copyText('Go-on-now-git.github.io',this)" style="cursor:pointer">Go-on-now-git.github.io <span style="font-size:0.6rem;color:var(--muted)">tap</span></td><td>3600</td></tr>
+    </table>
+
+    <div class="step" style="margin-top:8px;">
+      <div class="step-n">4.</div>
+      <div class="step-text">Save. Wait 10–30 minutes. Then open <a href="https://nsai.tech" target="_blank">nsai.tech</a> — it'll be live.</div>
+    </div>
+    <div class="step">
+      <div class="step-n">5.</div>
+      <div class="step-text">For HTTPS: after DNS propagates, go to <a href="https://github.com/Go-on-now-git/nsai-tech-site/settings/pages" target="_blank">GitHub Pages settings</a> → check <strong>"Enforce HTTPS"</strong></div>
+    </div>
+
+    <a href="https://name.store" target="_blank" class="action-btn">Open name.store →</a>
+    <a href="https://github.com/Go-on-now-git/nsai-tech-site/settings/pages" target="_blank" class="action-btn secondary" style="margin-left:8px;">GitHub Pages Settings</a>
+    <button class="mark-btn" onclick="markDone(3)">Mark as done ✓</button>
+    <div class="done-check">✓ DNS configured — site will be live within 30 min</div>
+  </div>
+</div>
+
+<!-- ALL DONE -->
+<div id="allDone" style="display:none; text-align:center; padding:32px 20px; background:rgba(74,222,128,0.05); border:1px solid rgba(74,222,128,0.2); border-radius:16px; margin-top:8px;">
+  <div style="font-size:2.5rem;margin-bottom:12px;">🚀</div>
+  <div style="font-size:1.2rem;font-weight:800;color:var(--green);margin-bottom:8px;">nsai.tech is live.</div>
+  <div style="font-size:0.85rem;color:var(--muted2);line-height:1.6;">Contact form → your Gmail. Booking link → your calendar.<br>Send out those email sequences and Telegram scripts.</div>
+  <a href="/nub" class="action-btn" style="margin-top:20px;">Back to NUB →</a>
+</div>
+
+<script>
+const STORAGE_KEY = 'nsai_setup_done';
+const done = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
+
+function markDone(n) {
+  done.add(n);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...done]));
+  document.getElementById('task'+n).classList.add('done');
+  updateProgress();
+}
+
+function updateProgress() {
+  [1,2,3].forEach(n => {
+    const el = document.getElementById('p'+n);
+    if (done.has(n)) { el.classList.add('done'); el.classList.remove('active'); }
+    else if (!done.has(n-1) && n > 1) { el.classList.remove('active','done'); }
+    else { el.classList.add('active'); }
+  });
+  if (done.size === 3) document.getElementById('allDone').style.display = 'block';
+}
+
+function copyText(text, el) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = el.innerHTML;
+    el.style.color = 'var(--green)';
+    setTimeout(() => { el.style.color = ''; }, 1200);
+  });
+}
+
+// Restore state
+done.forEach(n => document.getElementById('task'+n)?.classList.add('done'));
+updateProgress();
+</script>
+</body>
+</html>

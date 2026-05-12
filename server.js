@@ -87,6 +87,11 @@ app.get('/nub', (req, res) => {
   res.sendFile(path.join(__dirname, 'nub.html'));
 });
 
+// Launch Setup
+app.get('/setup', (req, res) => {
+  res.sendFile(path.join(__dirname, 'setup.html'));
+});
+
 app.post('/nub/run', (req, res) => {
   const { message, silent } = req.body;
   if (!message) return res.status(400).json({ error: 'No message' });
