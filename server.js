@@ -1,50 +1,193 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { execFile, exec } = require('child_process');
 const Anthropic = require('@anthropic-ai/sdk');
 
-// Load API key from .env.nsai
-function loadApiKey() {
+// ── Config ────────────────────────────────────────────────────────────────────
+function loadEnv() {
   try {
-    const env = fs.readFileSync('/root/.env.nsai', 'utf8');
-    const match = env.match(/^ANTHROPIC_API_KEY=(.+)$/m);
-    return match ? match[1].trim() : process.env.ANTHROPIC_API_KEY;
+    const raw = fs.readFileSync('/root/.env.nsai', 'utf8');
+    const get = (key) => { const m = raw.match(new RegExp(`^${key}=(.+)$`, 'm')); return m ? m[1].trim() : null; };
+    return {
+      apiKey: get('ANTHROPIC_API_KEY') || process.env.ANTHROPIC_API_KEY,
+      pin: get('PORTAL_PIN') || process.env.PORTAL_PIN || '1991',    // default: year of birth
+      secret: get('PORTAL_SECRET') || process.env.PORTAL_SECRET || 'nsai-secret-change-me',
+    };
   } catch {
-    return process.env.ANTHROPIC_API_KEY;
+    return { apiKey: process.env.ANTHROPIC_API_KEY, pin: '1991', secret: 'nsai-secret-change-me' };
   }
 }
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.urlencoded({ extended: false }));
 
-const SYSTEM_PROMPT = `You are NSAI — the AI operating system of Not So Holdings LLC, running on a sovereign edge device. You are speaking to a guest on the NSAI private network. Be sharp, direct, impressive. You represent cutting-edge AI infrastructure built and operated by Justin Perry. Keep responses concise but substantive. You can answer questions about NSAI services, automation, AI consulting, and what Not So Holdings does. If they ask about pricing or want to get started, direct them to contact Justin Perry at Not So Holdings LLC. You run 24/7 on a Samsung Galaxy S24 Ultra — a pocket-sized sovereign AI node.`;
+// Login rate limiting: max 5 attempts per IP per 5 minutes
+const loginAttempts = new Map();
+function checkLoginLimit(ip) {
+  const now = Date.now();
+  const window = 5 * 60 * 1000;
+  const max = 5;
+  const entry = loginAttempts.get(ip) || { count: 0, start: now };
+  if (now - entry.start > window) { loginAttempts.set(ip, { count: 1, start: now }); return false; }
+  if (entry.count >= max) return true;
+  entry.count++;
+  loginAttempts.set(ip, entry);
+  return false;
+}
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+// ── PIN Auth ──────────────────────────────────────────────────────────────────
+const SESSION_COOKIE = 'nsai_session';
 
+function signToken(pin, secret) {
+  return crypto.createHmac('sha256', secret).update(pin).digest('hex');
+}
+
+function parseCookies(req) {
+  const raw = req.headers.cookie || '';
+  return Object.fromEntries(raw.split(';').map(s => s.trim().split('=').map(decodeURIComponent)));
+}
+
+function isAuthed(req) {
+  const { pin, secret } = loadEnv();
+  const cookies = parseCookies(req);
+  const token = cookies[SESSION_COOKIE];
+  return token === signToken(pin, secret);
+}
+
+function requireAuth(req, res, next) {
+  if (isAuthed(req)) return next();
+  const redirect = encodeURIComponent(req.originalUrl);
+  res.redirect(`/login?next=${redirect}`);
+}
+
+// ── Public routes (no auth) ───────────────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.json({ status: 'online', system: 'NSAI', version: '1.0.0', uptime: process.uptime() });
+  res.json({ status: 'online', system: 'NSAI', version: '2.0.0', uptime: process.uptime() });
 });
 
-app.post('/chat', async (req, res) => {
+app.get('/login', (req, res) => {
+  const next = req.query.next || '/';
+  const errCode = req.query.err;
+  const err = errCode === '1';
+  const rateLimited = errCode === '2';
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NSAI Portal — Access</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#080A0F;color:#F0F2F8;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;}
+  .card{background:#0E1018;border:1px solid rgba(0,120,255,0.2);border-radius:20px;
+    padding:48px 40px;width:100%;max-width:380px;text-align:center;}
+  .logo{font-size:1.4rem;font-weight:900;background:linear-gradient(135deg,#0055CC,#0078FF,#00AAFF);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
+  .sub{font-size:0.78rem;color:#4A4F62;margin-bottom:36px;}
+  label{display:block;font-size:0.72rem;font-weight:600;color:#9299B0;letter-spacing:.08em;
+    text-transform:uppercase;text-align:left;margin-bottom:8px;}
+  input{width:100%;background:rgba(0,120,255,0.05);border:1px solid rgba(0,120,255,0.18);
+    border-radius:10px;padding:14px 16px;color:#F0F2F8;font-size:1.1rem;text-align:center;
+    letter-spacing:.3em;font-family:monospace;outline:none;transition:border-color .2s;}
+  input:focus{border-color:#0078FF;}
+  button{width:100%;margin-top:20px;background:linear-gradient(135deg,#0055CC,#0078FF,#00AAFF);
+    color:#fff;font-weight:700;font-size:0.95rem;padding:14px;border:none;border-radius:10px;
+    cursor:pointer;transition:opacity .2s;}
+  button:hover{opacity:.88;}
+  .err{color:#f87171;font-size:0.8rem;margin-top:16px;}
+  .hint{color:#4A4F62;font-size:0.72rem;margin-top:20px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">NSAI ⚡</div>
+  <div class="sub">Private Network Access</div>
+  <form method="POST" action="/login?next=${encodeURIComponent(next)}">
+    <label>Access PIN</label>
+    <input type="password" name="pin" inputmode="numeric" pattern="[0-9]*"
+      placeholder="••••" autofocus autocomplete="off" maxlength="12">
+    <button type="submit">Enter →</button>
+    ${err ? '<div class="err">Incorrect PIN. Try again.</div>' : ''}
+    ${rateLimited ? '<div class="err">Too many attempts. Wait 5 minutes.</div>' : ''}
+  </form>
+  <div class="hint">Authorized personnel only.</div>
+</div>
+</body>
+</html>`);
+});
+
+app.post('/login', (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+  if (checkLoginLimit(ip)) {
+    return res.redirect(`/login?err=2`);
+  }
+
+  const { pin: inputPin } = req.body;
+  const { pin, secret } = loadEnv();
+  const next = req.query.next || '/';
+
+  let valid = false;
+  try {
+    valid = inputPin && crypto.timingSafeEqual(
+      Buffer.from(inputPin.trim(), 'utf8'),
+      Buffer.from(pin, 'utf8')
+    );
+  } catch { valid = false; }
+
+  if (valid) {
+    const token = signToken(pin, secret);
+    // 30-day session
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Max-Age=${60*60*24*30}; SameSite=Strict`);
+    res.redirect(decodeURIComponent(next));
+  } else {
+    res.redirect(`/login?next=${encodeURIComponent(next)}&err=1`);
+  }
+});
+
+app.get('/logout', (req, res) => {
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; Path=/; Max-Age=0`);
+  res.redirect('/login');
+});
+
+// ── Protected static files (html/css/js in portal dir only) ──────────────────
+app.use(requireAuth, express.static(path.join(__dirname), {
+  index: 'index.html',
+  // Never expose server.js, .env files, or node_modules
+  setHeaders: (res, filePath) => {
+    const blocked = ['.env', 'server.js', 'package.json', 'package-lock.json'];
+    if (blocked.some(b => filePath.endsWith(b))) {
+      res.status(403).end();
+    }
+  }
+}));
+
+// ── Protected routes ──────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are NUB (Not So Artificial Intelligence Ultrabot) — the AI operating system of Not So Holdings LLC, running on a sovereign edge device. You are speaking to a guest on the NSAI private network. Be sharp, direct, impressive. You represent cutting-edge AI infrastructure built and operated by Justin Perry. Keep responses concise but substantive. You can answer questions about NSAI services, automation, AI consulting, and what Not So Holdings does. If they ask about pricing or want to get started, direct them to contact Justin Perry at nub@nsai.tech. You run 24/7 on a Samsung Galaxy S24 Ultra — a pocket-sized sovereign AI node.`;
+
+app.get('/', requireAuth, (req, res) => {
+  res.redirect('/nub');
+});
+
+// Guest demo chat — share this URL on your WiFi for prospects
+app.get('/demo', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});;
+
+app.post('/chat', requireAuth, async (req, res) => {
   const { message, history = [] } = req.body;
   if (!message) return res.status(400).json({ error: 'No message provided' });
 
-  const apiKey = loadApiKey();
+  const { apiKey } = loadEnv();
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
   const client = new Anthropic({ apiKey });
+  const messages = [...history.slice(-10), { role: 'user', content: message }];
 
-  // Build messages array
-  const messages = [
-    ...history.slice(-10), // last 10 exchanges for context
-    { role: 'user', content: message }
-  ];
-
-  // Set SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -54,17 +197,9 @@ app.post('/chat', async (req, res) => {
     const stream = client.messages.stream({
       model: 'claude-haiku-4-5',
       max_tokens: 1024,
-      system: [
-        {
-          type: 'text',
-          text: SYSTEM_PROMPT,
-          cache_control: { type: 'ephemeral' }
-        }
-      ],
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages,
-      headers: {
-        'anthropic-beta': 'prompt-caching-2024-07-31'
-      }
+      headers: { 'anthropic-beta': 'prompt-caching-2024-07-31' }
     });
 
     for await (const chunk of stream) {
@@ -72,27 +207,23 @@ app.post('/chat', async (req, res) => {
         res.write(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`);
       }
     }
-
     res.write('data: [DONE]\n\n');
     res.end();
   } catch (err) {
-    console.error('Stream error:', err.message);
     res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
     res.end();
   }
 });
 
-// NUB Control Panel
-app.get('/nub', (req, res) => {
+app.get('/nub', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'nub.html'));
 });
 
-// Launch Setup
-app.get('/setup', (req, res) => {
+app.get('/setup', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'setup.html'));
 });
 
-app.post('/nub/run', (req, res) => {
+app.post('/nub/run', requireAuth, (req, res) => {
   const { message, silent } = req.body;
   if (!message) return res.status(400).json({ error: 'No message' });
 
@@ -105,7 +236,7 @@ app.post('/nub/run', (req, res) => {
   });
 });
 
-app.get('/nub/status', (req, res) => {
+app.get('/nub/status', requireAuth, (req, res) => {
   exec('python3 /root/.openclaw/workspace/nub_db.py summary', { timeout: 10000 }, (err, stdout) => {
     if (err) return res.json({ ok: false, error: err.message });
     try { res.json({ ok: true, ...JSON.parse(stdout) }); }
@@ -116,4 +247,5 @@ app.get('/nub/status', (req, res) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`⚡ NSAI Portal running on http://0.0.0.0:${PORT}`);
+  console.log(`🔒 PIN gate active — set PORTAL_PIN in /root/.env.nsai to change`);
 });
