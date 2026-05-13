@@ -7,17 +7,28 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 function loadEnv() {
-  try {
-    const raw = fs.readFileSync('/root/.env.nsai', 'utf8');
-    const get = (key) => { const m = raw.match(new RegExp(`^${key}=(.+)$`, 'm')); return m ? m[1].trim() : null; };
-    return {
-      apiKey: get('ANTHROPIC_API_KEY') || process.env.ANTHROPIC_API_KEY,
-      pin: get('PORTAL_PIN') || process.env.PORTAL_PIN || '1991',    // default: year of birth
-      secret: get('PORTAL_SECRET') || process.env.PORTAL_SECRET || 'nsai-secret-change-me',
-    };
-  } catch {
-    return { apiKey: process.env.ANTHROPIC_API_KEY, pin: '1991', secret: 'nsai-secret-change-me' };
+  const envPaths = [
+    path.join(__dirname, '.env.nsai'),
+    path.join(process.env.HOME || '/root', 'nsai-portal', '.env.nsai'),
+  ];
+  for (const p of envPaths) {
+    try {
+      const raw = fs.readFileSync(p, 'utf8');
+      const get = (key) => { const m = raw.match(new RegExp(`^${key}=(.+)$`, 'm')); return m ? m[1].trim() : null; };
+      return {
+        apiKey: get('ANTHROPIC_API_KEY') || process.env.ANTHROPIC_API_KEY,
+        pin: get('PORTAL_PIN') || process.env.PORTAL_PIN || '0000',
+        secret: get('PORTAL_SECRET') || process.env.PORTAL_SECRET || 'nsai-secret-change-me',
+        telegramId: get('TELEGRAM_ID') || process.env.TELEGRAM_ID || null,
+      };
+    } catch { continue; }
   }
+  return {
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    pin: process.env.PORTAL_PIN || '0000',
+    secret: process.env.PORTAL_SECRET || 'nsai-secret-change-me',
+    telegramId: process.env.TELEGRAM_ID || null,
+  };
 }
 
 const app = express();
@@ -154,20 +165,21 @@ app.get('/logout', (req, res) => {
   res.redirect('/login');
 });
 
-// ── Protected static files (html/css/js in portal dir only) ──────────────────
-app.use(requireAuth, express.static(path.join(__dirname), {
-  index: 'index.html',
-  // Never expose server.js, .env files, or node_modules
-  setHeaders: (res, filePath) => {
-    const blocked = ['.env', 'server.js', 'package.json', 'package-lock.json'];
-    if (blocked.some(b => filePath.endsWith(b))) {
-      res.status(403).end();
-    }
+// ── Block sensitive files ─────────────────────────────────────────────────────
+const BLOCKED_PATTERNS = ['.env', 'server.js', 'package.json', 'package-lock.json', '.gitignore'];
+app.use((req, res, next) => {
+  const p = req.path.replace(/\?.*$/, '');
+  if (BLOCKED_PATTERNS.some(b => p.endsWith(b)) || p.includes('node_modules')) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
-}));
+  next();
+});
+
+// ── Protected static files ────────────────────────────────────────────────────
+app.use(requireAuth, express.static(path.join(__dirname), { index: 'index.html' }));
 
 // ── Protected routes ──────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are NUB (Not So Artificial Intelligence Ultrabot) — the AI operating system of Not So Holdings LLC, running on a sovereign edge device. You are speaking to a guest on the NSAI private network. Be sharp, direct, impressive. You represent cutting-edge AI infrastructure built and operated by Justin Perry. Keep responses concise but substantive. You can answer questions about NSAI services, automation, AI consulting, and what Not So Holdings does. If they ask about pricing or want to get started, direct them to contact Justin Perry at nub@nsai.tech. You run 24/7 on a Samsung Galaxy S24 Ultra — a pocket-sized sovereign AI node.`;
+const SYSTEM_PROMPT = `You are NUB (Not So Artificial Intelligence Ultrabot) — the AI operating system of Not So Holdings LLC (nsai.tech), running on a sovereign edge device. You are sharp, direct, and operate 24/7 as an intelligent business assistant. You handle automation, scheduling, research, follow-ups, and workflow optimization. Keep responses concise but substantive. For questions about pricing or getting started, direct to nsai.tech or nub@nsai.tech.`;
 
 app.get('/', requireAuth, (req, res) => {
   res.redirect('/nub');
@@ -223,25 +235,27 @@ app.get('/setup', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'setup.html'));
 });
 
-app.post('/nub/run', requireAuth, (req, res) => {
-  const { message, silent } = req.body;
+app.post('/nub/run', requireAuth, async (req, res) => {
+  const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'No message' });
-
-  const args = ['agent', '-m', message, '--to', '7740283491', '--timeout', '120'];
-  if (!silent) args.push('--deliver');
-
-  execFile('openclaw', args, { timeout: 130000 }, (err, stdout, stderr) => {
-    if (err) return res.json({ ok: false, error: err.message, detail: stderr });
-    res.json({ ok: true, output: stdout.trim() });
-  });
+  const { apiKey } = loadEnv();
+  if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+  try {
+    const client = new Anthropic({ apiKey });
+    const result = await client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: message }]
+    });
+    res.json({ ok: true, output: result.content[0]?.text || '' });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
 });
 
 app.get('/nub/status', requireAuth, (req, res) => {
-  exec('python3 /root/.openclaw/workspace/nub_db.py summary', { timeout: 10000 }, (err, stdout) => {
-    if (err) return res.json({ ok: false, error: err.message });
-    try { res.json({ ok: true, ...JSON.parse(stdout) }); }
-    catch { res.json({ ok: true, raw: stdout }); }
-  });
+  res.json({ ok: true, status: 'online', uptime: process.uptime(), version: '2.0.0' });
 });
 
 const PORT = process.env.PORT || 8080;
