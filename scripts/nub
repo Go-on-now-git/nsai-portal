@@ -1,0 +1,59 @@
+#!/bin/bash
+set -e
+
+# === OpenClaw Android/proot network shim ===
+export NODE_OPTIONS="--require /root/openclaw-shim.cjs"
+
+if [ ! -f /root/openclaw-shim.cjs ]; then
+    cat > /root/openclaw-shim.cjs << 'SHIM'
+const os = require('os');
+os.networkInterfaces = () => ({
+  lo: [{
+    address: '127.0.0.1',
+    netmask: '255.0.0.0',
+    family: 'IPv4',
+    mac: '00:00:00:00:00:00',
+    internal: true,
+    cidr: '127.0.0.1/8'
+  }]
+});
+SHIM
+fi
+
+echo "[NUB] Starting..."
+
+# Repair OpenClaw if missing
+if [ ! -d "/usr/lib/node_modules/openclaw" ]; then
+    HIDDEN_DIR=$(ls -d /usr/lib/node_modules/.openclaw-* 2>/dev/null | head -n 1)
+    if [ -n "$HIDDEN_DIR" ]; then
+        echo "[NUB] Restoring openclaw..."
+        mv "$HIDDEN_DIR" /usr/lib/node_modules/openclaw
+    fi
+fi
+
+# Services with their config
+declare -A SERVICES=(
+    [ollama]="ollama:-- serve"
+    [openclaw]="/root/start-openclaw.sh:--env OPENCLAW_DNS_ADVERTISE=off"
+    [nub-event-handler]="/root/thepopebot/event_handler/server.js:--cwd /root/thepopebot/event_handler"
+    [nsai-portal]="/root/nsai-portal/server.js:--cwd /root/nsai-portal"
+    [n8n]="n8n:-- start"
+    [nub-watchdog]="/root/nub-watchdog.sh:--interpreter bash"
+    [jarvis-monitor]="/root/jarvis-monitor/monitor.js:"
+    [privacy-shield]="/root/jarvis-monitor/privacy-scan.js:"
+)
+
+for name in "${!SERVICES[@]}"; do
+    IFS=':' read -r path args <<< "${SERVICES[$name]}"
+    if pm2 list 2>/dev/null | grep -q "$name"; then
+        echo "[NUB] $name already running"
+    else
+        echo "[NUB] Starting $name..."
+        pm2 start $path --name "$name" $args 2>/dev/null
+    fi
+done
+
+pm2 save
+echo ""
+pm2 list
+echo "[NUB] Online."
