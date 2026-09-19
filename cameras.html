@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NUB — Camera Grid</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#0078FF;--blue2:#4DA6FF;--cyan:#00C8FF;
+  --bg:#080A0F;--bg2:#0E1018;--bg3:#141820;
+  --border:rgba(0,120,255,0.12);--border2:rgba(0,120,255,0.22);
+  --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;
+  --white:#F0F2F8;--muted:#6B7280;--muted2:#9299B0;
+}
+html,body{height:100%;background:var(--bg);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;}
+
+/* TOPBAR */
+.topbar{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;
+  background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;
+}
+.topbar-logo{font-size:1rem;font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.topbar-title{font-size:0.82rem;font-weight:700;color:var(--white);}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.topbar-btn{
+  padding:7px 14px;border-radius:8px;font-size:0.72rem;font-weight:700;cursor:pointer;
+  border:1px solid var(--border2);background:transparent;color:var(--muted2);
+  transition:all 0.12s;
+}
+.topbar-btn:hover{border-color:var(--blue);color:var(--white);}
+.topbar-btn.primary{background:rgba(0,120,255,0.15);border-color:var(--blue);color:var(--blue2);}
+.topbar-btn.danger{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.4);color:var(--red);}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.45}}
+
+/* CONTROLS */
+.controls{
+  padding:14px 16px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+}
+.ctrl-group{display:flex;gap:8px;align-items:center;}
+.ctrl-label{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);white-space:nowrap;}
+.ctrl-input{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  color:var(--white);padding:7px 10px;font-size:0.78rem;outline:none;width:160px;
+}
+.ctrl-input:focus{border-color:var(--blue);}
+.ctrl-select{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  color:var(--white);padding:7px 10px;font-size:0.78rem;outline:none;
+}
+.scan-btn{
+  padding:8px 16px;border-radius:8px;font-size:0.74rem;font-weight:700;cursor:pointer;
+  background:rgba(0,120,255,0.15);border:1px solid var(--blue);color:var(--blue2);
+  transition:all 0.12s;white-space:nowrap;
+}
+.scan-btn:hover{background:rgba(0,120,255,0.25);}
+.scan-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.add-btn{
+  padding:8px 16px;border-radius:8px;font-size:0.74rem;font-weight:700;cursor:pointer;
+  background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.4);color:var(--green);
+  transition:all 0.12s;
+}
+.scan-status{font-size:0.7rem;color:var(--muted2);}
+
+/* GRID */
+.cam-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:12px;padding:16px;
+}
+.cam-tile{
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;position:relative;transition:border-color 0.15s;
+}
+.cam-tile:hover{border-color:var(--border2);}
+.cam-tile.active{border-color:rgba(34,197,94,0.4);}
+.cam-tile.error{border-color:rgba(239,68,68,0.3);}
+
+.cam-header{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;
+  border-bottom:1px solid var(--border);background:var(--bg3);
+}
+.cam-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.cam-dot.live{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s ease-in-out infinite;}
+.cam-dot.err{background:var(--red);}
+.cam-name{font-size:0.74rem;font-weight:700;color:var(--white);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cam-ip{font-size:0.6rem;color:var(--muted);font-family:monospace;}
+.cam-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:2px;line-height:1;}
+.cam-remove:hover{color:var(--red);}
+
+.cam-view{
+  position:relative;background:#000;aspect-ratio:16/9;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.cam-view img,.cam-view video{width:100%;height:100%;object-fit:cover;}
+.cam-overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;
+  background:rgba(0,0,0,0.7);
+}
+.cam-overlay-icon{font-size:2rem;opacity:0.6;}
+.cam-overlay-text{font-size:0.7rem;color:var(--muted2);text-align:center;max-width:200px;}
+.cam-load-btn{
+  padding:7px 16px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;
+  background:rgba(0,120,255,0.2);border:1px solid var(--blue);color:var(--blue2);
+}
+
+.cam-footer{display:flex;gap:8px;padding:8px 12px;align-items:center;}
+.cam-type{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.06em;padding:2px 7px;border-radius:4px;font-weight:700;}
+.cam-type.mjpeg{background:rgba(0,200,255,0.12);color:var(--cyan);}
+.cam-type.rtsp{background:rgba(245,158,11,0.12);color:var(--yellow);}
+.cam-type.hls{background:rgba(34,197,94,0.12);color:var(--green);}
+.cam-url{font-size:0.6rem;color:var(--muted);font-family:monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cam-fullscreen{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0;}
+.cam-fullscreen:hover{color:var(--white);}
+
+/* EMPTY */
+.empty-state{
+  grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:16px;
+  padding:60px 20px;text-align:center;
+}
+.empty-icon{font-size:3rem;opacity:0.3;}
+.empty-title{font-size:0.9rem;font-weight:700;color:var(--muted2);}
+.empty-sub{font-size:0.72rem;color:var(--muted);max-width:300px;line-height:1.5;}
+
+/* ADD MODAL */
+.modal-wrap{
+  position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);
+}
+.modal-wrap.open{display:flex;}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:18px;
+  width:min(400px,92vw);padding:24px;display:flex;flex-direction:column;gap:14px;
+  box-shadow:0 24px 80px rgba(0,120,255,0.18);
+}
+.modal-title{font-size:0.9rem;font-weight:800;color:var(--white);}
+.modal-field{display:flex;flex-direction:column;gap:5px;}
+.modal-label{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);}
+.modal-input,.modal-select{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:8px;
+  color:var(--white);padding:9px 12px;font-size:0.8rem;outline:none;width:100%;
+}
+.modal-input:focus,.modal-select:focus{border-color:var(--blue);}
+.modal-row{display:flex;gap:8px;}
+.modal-btn{flex:1;padding:10px;border-radius:10px;font-size:0.76rem;font-weight:700;cursor:pointer;border:1px solid;transition:all 0.12s;}
+.modal-btn.go{background:rgba(0,120,255,0.15);border-color:var(--blue);color:var(--blue2);}
+.modal-btn.cancel{background:transparent;border-color:var(--border);color:var(--muted);}
+
+/* FULLSCREEN */
+.fs-overlay{
+  position:fixed;inset:0;z-index:300;background:#000;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+}
+.fs-overlay.open{display:flex;}
+.fs-overlay img,.fs-overlay video{max-width:100%;max-height:calc(100vh - 50px);object-fit:contain;}
+.fs-close{position:absolute;top:12px;right:16px;background:rgba(0,0,0,0.6);border:1px solid var(--border2);color:var(--white);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.78rem;font-weight:700;}
+
+@media(max-width:600px){
+  .cam-grid{grid-template-columns:1fr;padding:10px;}
+  .controls{padding:10px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="status-dot" id="statusDot"></span>
+  <span class="topbar-logo">NUB</span>
+  <span class="topbar-title">📷 Camera Grid</span>
+  <div class="topbar-actions">
+    <button class="topbar-btn" onclick="location.href='/nub'">← Dashboard</button>
+    <button class="topbar-btn primary" onclick="openAddModal()">+ Add Camera</button>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <span class="ctrl-label">Subnet</span>
+    <input class="ctrl-input" id="scanSubnet" placeholder="192.168.1.0/24" value="192.168.1.0/24">
+  </div>
+  <button class="scan-btn" id="scanBtn" onclick="scanForCameras()">📡 Scan Network</button>
+  <span class="scan-status" id="scanStatus"></span>
+  <div style="margin-left:auto;display:flex;gap:8px;">
+    <select class="ctrl-select" id="gridSize" onchange="applyGridSize()">
+      <option value="320">2-up</option>
+      <option value="240">3-up</option>
+      <option value="180">4-up</option>
+    </select>
+    <button class="topbar-btn danger" onclick="clearAll()">Clear All</button>
+  </div>
+</div>
+
+<div class="cam-grid" id="camGrid">
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">📷</div>
+    <div class="empty-title">No cameras added</div>
+    <div class="empty-sub">Scan your network to discover cameras, or add one manually with the + button.</div>
+  </div>
+</div>
+
+<!-- Add Camera Modal -->
+<div class="modal-wrap" id="addModal" onclick="if(event.target===this)closeAddModal()">
+  <div class="modal">
+    <div class="modal-title">Add Camera</div>
+    <div class="modal-field">
+      <div class="modal-label">Name</div>
+      <input class="modal-input" id="addName" placeholder="Front Door, Garage, etc.">
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">IP Address</div>
+      <input class="modal-input" id="addIp" placeholder="192.168.1.100">
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">Stream Type</div>
+      <select class="modal-select" id="addType" onchange="updatePortHint()">
+        <option value="mjpeg">MJPEG (HTTP)</option>
+        <option value="rtsp">RTSP → HLS</option>
+        <option value="hls">HLS (m3u8)</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">Port</div>
+      <input class="modal-input" id="addPort" placeholder="80" value="80">
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">Stream Path (optional)</div>
+      <input class="modal-input" id="addPath" placeholder="/video/mjpg.cgi or /stream1">
+    </div>
+    <div class="modal-row">
+      <button class="modal-btn cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="modal-btn go" onclick="addCameraManual()">Add Camera</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen overlay -->
+<div class="fs-overlay" id="fsOverlay">
+  <button class="fs-close" onclick="closeFull()">✕ Close</button>
+  <div id="fsContent"></div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let cameras = JSON.parse(localStorage.getItem('nub_cameras') || '[]');
+let hlsInstances = {};
+
+function save() { localStorage.setItem('nub_cameras', JSON.stringify(cameras)); }
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const grid = document.getElementById('camGrid');
+  document.getElementById('emptyState').style.display = cameras.length ? 'none' : 'flex';
+  // Remove old tiles
+  grid.querySelectorAll('.cam-tile').forEach(t => t.remove());
+  cameras.forEach((cam, i) => grid.appendChild(makeTile(cam, i)));
+}
+
+function makeTile(cam, idx) {
+  const tile = document.createElement('div');
+  tile.className = 'cam-tile';
+  tile.id = `tile-${cam.id}`;
+  tile.innerHTML = `
+    <div class="cam-header">
+      <div class="cam-dot" id="dot-${cam.id}"></div>
+      <div class="cam-name">${esc(cam.name)}</div>
+      <span class="cam-ip">${esc(cam.ip)}</span>
+      <button class="cam-remove" onclick="removeCamera('${cam.id}')">✕</button>
+    </div>
+    <div class="cam-view" id="view-${cam.id}">
+      <div class="cam-overlay" id="overlay-${cam.id}">
+        <div class="cam-overlay-icon">📷</div>
+        <div class="cam-overlay-text">${esc(cam.ip)}${cam.port !== 80 ? ':'+cam.port : ''}</div>
+        <button class="cam-load-btn" onclick="loadStream('${cam.id}')">▶ Load Stream</button>
+      </div>
+    </div>
+    <div class="cam-footer">
+      <span class="cam-type ${cam.type}">${cam.type.toUpperCase()}</span>
+      <span class="cam-url">${esc(streamUrl(cam))}</span>
+      <button class="cam-fullscreen" onclick="fullscreen('${cam.id}')" title="Fullscreen">⛶</button>
+    </div>`;
+  return tile;
+}
+
+function streamUrl(cam) {
+  if (cam.type === 'mjpeg') return `/cameras/proxy/mjpeg?ip=${cam.ip}&port=${cam.port}&path=${encodeURIComponent(cam.path||'/')}`;
+  if (cam.type === 'hls') return `/cameras/proxy/hls?ip=${cam.ip}&port=${cam.port}&path=${encodeURIComponent(cam.path||'/stream.m3u8')}`;
+  if (cam.type === 'rtsp') return `/cameras/hls/${cam.id}/stream.m3u8`;
+  return '';
+}
+
+function loadStream(id) {
+  const cam = cameras.find(c => c.id === id);
+  if (!cam) return;
+  const view = document.getElementById(`view-${id}`);
+  const overlay = document.getElementById(`overlay-${id}`);
+  const dot = document.getElementById(`dot-${id}`);
+
+  overlay.innerHTML = '<div class="cam-overlay-text" style="color:var(--cyan)">Connecting...</div>';
+
+  if (cam.type === 'mjpeg') {
+    const img = document.createElement('img');
+    img.src = streamUrl(cam) + '&t=' + Date.now();
+    img.onload = () => { dot.className = 'cam-dot live'; overlay.style.display = 'none'; document.getElementById(`tile-${id}`).classList.add('active'); };
+    img.onerror = () => { dot.className = 'cam-dot err'; overlay.innerHTML = '<div class="cam-overlay-icon">⚠️</div><div class="cam-overlay-text">Stream unavailable — check IP/port</div><button class="cam-load-btn" onclick="loadStream(\''+id+'\')">Retry</button>'; document.getElementById(`tile-${id}`).classList.add('error'); };
+    view.appendChild(img);
+  } else if (cam.type === 'rtsp') {
+    // Start HLS transcode on server, then load m3u8
+    fetch('/cameras/hls/start', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id: cam.id, ip: cam.ip, port: cam.port, path: cam.path })
+    }).then(r=>r.json()).then(d => {
+      if (!d.ok) { overlay.innerHTML = '<div class="cam-overlay-icon">⚠️</div><div class="cam-overlay-text">'+esc(d.error||'Transcode failed')+'</div>'; return; }
+      loadHLS(id, streamUrl(cam), view, overlay, dot);
+    });
+  } else if (cam.type === 'hls') {
+    loadHLS(id, streamUrl(cam), view, overlay, dot);
+  }
+}
+
+function loadHLS(id, src, view, overlay, dot) {
+  if (typeof Hls === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js';
+    s.onload = () => loadHLS(id, src, view, overlay, dot);
+    document.head.appendChild(s);
+    return;
+  }
+  const video = document.createElement('video');
+  video.autoplay = true; video.muted = true; video.playsInline = true;
+  video.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+  if (Hls.isSupported()) {
+    const hls = new Hls({ lowLatencyMode: true });
+    hls.loadSource(src);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play(); dot.className = 'cam-dot live'; overlay.style.display = 'none'; });
+    hls.on(Hls.Events.ERROR, (e,d) => { if (d.fatal) { dot.className = 'cam-dot err'; overlay.style.display = 'flex'; overlay.innerHTML = '<div class="cam-overlay-icon">⚠️</div><div class="cam-overlay-text">HLS error</div><button class="cam-load-btn" onclick="loadStream(\''+id+'\')">Retry</button>'; }});
+    hlsInstances[id] = hls;
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = src;
+    video.addEventListener('loadeddata', () => { dot.className = 'cam-dot live'; overlay.style.display = 'none'; });
+  }
+  view.appendChild(video);
+}
+
+// ── Scan ──────────────────────────────────────────────────────────────────────
+async function scanForCameras() {
+  const subnet = document.getElementById('scanSubnet').value.trim() || '192.168.1.0/24';
+  const btn = document.getElementById('scanBtn');
+  const status = document.getElementById('scanStatus');
+  btn.disabled = true;
+  status.textContent = 'Scanning… (up to 30s)';
+  try {
+    const r = await fetch('/cameras/scan', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ subnet })
+    });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = '✗ ' + (d.error||'Scan failed'); return; }
+    const found = d.cameras || [];
+    status.textContent = `Found ${found.length} camera${found.length!==1?'s':''} on ${subnet}`;
+    found.forEach(cam => {
+      if (!cameras.find(c => c.ip === cam.ip && c.port === cam.port)) {
+        cameras.push(cam);
+      }
+    });
+    save(); render();
+  } catch(e) {
+    status.textContent = '✗ ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Add Manual ────────────────────────────────────────────────────────────────
+function openAddModal() { document.getElementById('addModal').classList.add('open'); document.getElementById('addIp').focus(); }
+function closeAddModal() { document.getElementById('addModal').classList.remove('open'); }
+function updatePortHint() {
+  const t = document.getElementById('addType').value;
+  document.getElementById('addPort').value = t === 'rtsp' ? '554' : t === 'hls' ? '8080' : '80';
+  document.getElementById('addPath').placeholder = t === 'rtsp' ? '/stream1 or /ch0' : t === 'hls' ? '/stream.m3u8' : '/video/mjpg.cgi';
+}
+function addCameraManual() {
+  const ip = document.getElementById('addIp').value.trim();
+  if (!ip) return;
+  const cam = {
+    id: 'cam_' + Date.now(),
+    name: document.getElementById('addName').value.trim() || `Camera ${cameras.length+1}`,
+    ip,
+    port: parseInt(document.getElementById('addPort').value)||80,
+    path: document.getElementById('addPath').value.trim(),
+    type: document.getElementById('addType').value,
+    addedAt: new Date().toISOString()
+  };
+  cameras.push(cam); save(); render(); closeAddModal();
+}
+
+// ── Misc ──────────────────────────────────────────────────────────────────────
+function removeCamera(id) {
+  if (hlsInstances[id]) { hlsInstances[id].destroy(); delete hlsInstances[id]; }
+  cameras = cameras.filter(c => c.id !== id);
+  save(); render();
+}
+function clearAll() {
+  if (!confirm('Remove all cameras?')) return;
+  Object.values(hlsInstances).forEach(h => h.destroy()); hlsInstances = {};
+  cameras = []; save(); render();
+}
+function applyGridSize() {
+  const px = document.getElementById('gridSize').value;
+  document.getElementById('camGrid').style.gridTemplateColumns = `repeat(auto-fill,minmax(${px}px,1fr))`;
+}
+function fullscreen(id) {
+  const cam = cameras.find(c => c.id === id);
+  if (!cam) return;
+  const fs = document.getElementById('fsOverlay');
+  const content = document.getElementById('fsContent');
+  fs.classList.add('open');
+  if (cam.type === 'mjpeg') {
+    content.innerHTML = `<img src="${streamUrl(cam)}&t=${Date.now()}" style="max-width:100vw;max-height:calc(100vh-50px);object-fit:contain;">`;
+  } else {
+    content.innerHTML = `<video autoplay muted playsinline style="max-width:100vw;max-height:calc(100vh-50px);" id="fs-video"></video>`;
+    const video = document.getElementById('fs-video');
+    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(streamUrl(cam));
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+    }
+  }
+}
+function closeFull() {
+  document.getElementById('fsOverlay').classList.remove('open');
+  document.getElementById('fsContent').innerHTML = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFull(); });
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+render();
+</script>
+</body>
+</html>

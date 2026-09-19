@@ -267,6 +267,45 @@
     line-height: 1.5;
   }
 
+  .testimonial-strip {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .testimonial-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    text-align: left;
+  }
+  .testimonial-stars { font-size: 16px; margin-bottom: 6px; }
+  .testimonial-text {
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.7;
+    font-style: italic;
+  }
+  .testimonial-author {
+    font-size: 12px;
+    color: #7c3aed;
+    margin-top: 8px;
+    font-weight: bold;
+  }
+  .testimonial-cta {
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+    margin-top: 6px;
+  }
+  .testimonial-cta a {
+    color: #7c3aed;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .testimonial-cta a:hover { text-decoration: underline; }
+
   .welcome-chips {
     display: flex;
     flex-wrap: wrap;
@@ -417,6 +456,14 @@
         <div class="chip" onclick="sendChip(this)">What does this cost?</div>
         <div class="chip" onclick="sendChip(this)">How is this different from ChatGPT?</div>
         <div class="chip" onclick="sendChip(this)">How do I get set up?</div>
+      </div>
+      <div class="testimonial-strip">
+        <div class="testimonial-card">
+          <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+          <div class="testimonial-text">"Justin came out personally, got me logged into my Duke Energy account, and even sent me a beautiful step-by-step guide I can follow myself. He didn't charge me a dime. First class all the way."</div>
+          <div class="testimonial-author">— Julie R., Zephyrhills FL &nbsp;·&nbsp; <em>First Client ❤️</em></div>
+        </div>
+        <div class="testimonial-cta">⭐ Had a great experience? <a href="https://g.page/r/not-so-holdings/review" target="_blank">Leave us a Google review</a></div>
       </div>
     </div>
   </div>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>NUB Intel — NSAI</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#0078FF;--cyan:#00C8FF;--green:#22c55e;--yellow:#f59e0b;
+  --red:#ef4444;--purple:#a855f7;
+  --bg:#080A0F;--bg2:#0E1018;--bg3:#141820;--bg4:#1a2030;
+  --border:rgba(0,120,255,0.12);--border2:rgba(0,120,255,0.22);
+  --white:#F0F2F8;--muted:#6B7280;
+}
+html,body{height:100%;background:var(--bg);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column}
+
+/* ── top bar ── */
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.pill{padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;letter-spacing:0.05em;background:rgba(0,120,255,0.15);border:1px solid var(--border2);color:var(--cyan)}
+.pill.running{background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.3);color:var(--green);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.5}}
+.back{margin-left:auto;color:var(--muted);font-size:0.8rem;text-decoration:none;padding:5px 12px;border:1px solid var(--border);border-radius:6px}
+.back:hover{background:var(--bg3)}
+
+/* ── layout ── */
+.layout{flex:1;display:grid;grid-template-columns:300px 1fr;overflow:hidden}
+
+/* ── left panel ── */
+.left{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
+.section-head{padding:12px 16px;font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid var(--border);flex-shrink:0}
+
+/* category cards */
+.cats{overflow-y:auto;flex-shrink:0;max-height:50%}
+.cat-card{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;display:flex;align-items:center;gap:10px}
+.cat-card:hover{background:var(--bg3)}
+.cat-card.active{background:rgba(0,120,255,0.1);border-left:3px solid var(--blue)}
+.cat-icon{font-size:1.2rem;flex-shrink:0}
+.cat-info{flex:1;min-width:0}
+.cat-name{font-size:0.82rem;font-weight:600}
+.cat-desc{font-size:0.68rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.btn-auto{margin:12px;padding:10px;background:linear-gradient(135deg,var(--blue),var(--purple));border:none;border-radius:8px;color:#fff;font-weight:700;font-size:0.82rem;cursor:pointer;letter-spacing:0.05em;flex-shrink:0}
+.btn-auto:hover{opacity:0.85}
+
+/* history */
+.history{overflow-y:auto;flex:1}
+.hist-item{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.hist-item:hover{background:var(--bg3)}
+.hist-cat{font-size:0.68rem;color:var(--cyan);font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+.hist-preview{font-size:0.75rem;color:var(--muted);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hist-ts{font-size:0.62rem;color:var(--muted);margin-top:4px}
+
+/* ── right panel ── */
+.right{display:flex;flex-direction:column;overflow:hidden}
+.status-bar{padding:10px 20px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-shrink:0;font-size:0.78rem}
+.phase{color:var(--cyan);font-weight:600}
+.metric{color:var(--muted)}
+.metric span{color:var(--white);font-weight:600}
+
+/* stream output */
+.stream{flex:1;overflow-y:auto;padding:20px;font-family:'SF Mono','Fira Code',monospace;font-size:0.78rem;line-height:1.6}
+.stream-idle{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted);text-align:center}
+.stream-idle .big{font-size:2.5rem}
+.brief-block{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:20px;white-space:pre-wrap;line-height:1.7;font-size:0.82rem;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:var(--white)}
+.brief-block .dark-tag{color:var(--red);font-weight:700}
+.phase-line{color:var(--cyan);margin-bottom:8px}
+.tor-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:var(--purple);font-size:0.68rem;font-weight:600;margin-bottom:12px}
+
+/* toggle */
+.tor-toggle{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--muted);cursor:pointer}
+.toggle{width:32px;height:18px;border-radius:9px;background:var(--muted);position:relative;transition:background 0.2s;cursor:pointer;flex-shrink:0}
+.toggle.on{background:var(--purple)}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform 0.2s}
+.toggle.on::after{transform:translateX(14px)}
+
+@media(max-width:600px){.layout{grid-template-columns:1fr}.left{display:none}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">NUB INTEL</span>
+  <span class="pill" id="statusPill">IDLE</span>
+  <a href="/nub" class="back">← Dashboard</a>
+</div>
+
+<div class="layout">
+  <!-- left: categories + history -->
+  <div class="left">
+    <div class="section-head">Intel Categories</div>
+    <div class="cats" id="catList"></div>
+    <button class="btn-auto" onclick="runCategory('auto')">🔄 AUTO — Run All Categories</button>
+    <div class="section-head">Recent Runs</div>
+    <div class="history" id="historyList"></div>
+  </div>
+
+  <!-- right: live output -->
+  <div class="right">
+    <div class="status-bar">
+      <span class="phase" id="phaseText">Ready</span>
+      <span class="metric">Sources <span id="sourcesNum">—</span></span>
+      <span class="metric">Kept <span id="docsNum">—</span></span>
+      <span class="metric">Time <span id="timeNum">—</span></span>
+      <label class="tor-toggle" title="Include dark web (Tor) sources">
+        <span>🧅 Tor</span>
+        <div class="toggle on" id="torToggle" onclick="toggleTor()"></div>
+      </label>
+    </div>
+    <div class="stream" id="stream">
+      <div class="stream-idle">
+        <div class="big">🕵️</div>
+        <div>Pick a category or hit AUTO to start hunting.</div>
+        <div style="font-size:0.72rem;color:var(--muted)">Results save to Proton Drive automatically.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let useTor = true;
+let es = null;
+let currentCat = null;
+
+function toggleTor() {
+  useTor = !useTor;
+  document.getElementById('torToggle').classList.toggle('on', useTor);
+}
+
+async function loadCategories() {
+  const res = await fetch('/nub/intel/categories');
+  const cats = await res.json();
+  const el = document.getElementById('catList');
+  el.innerHTML = '';
+  for (const [key, c] of Object.entries(cats)) {
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.id = `cat-${key}`;
+    card.innerHTML = `<span class="cat-icon">${c.icon}</span><div class="cat-info"><div class="cat-name">${c.name}</div><div class="cat-desc">${c.desc}</div></div>`;
+    card.onclick = () => runCategory(key);
+    el.appendChild(card);
+  }
+}
+
+async function loadHistory() {
+  const res = await fetch('/nub/intel/history');
+  const hist = await res.json();
+  const el = document.getElementById('historyList');
+  el.innerHTML = hist.length ? '' : '<div style="padding:12px 16px;color:var(--muted);font-size:0.75rem">No runs yet</div>';
+  for (const h of hist) {
+    const d = document.createElement('div');
+    d.className = 'hist-item';
+    d.innerHTML = `<div class="hist-cat">${h.category || 'Custom'}</div><div class="hist-preview">${h.brief || ''}</div><div class="hist-ts">${new Date(h.ts.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')).toLocaleString()}</div>`;
+    d.onclick = () => showBrief(h);
+    el.appendChild(d);
+  }
+}
+
+function showBrief(h) {
+  setStream(`<div class="tor-badge">📋 HISTORY — ${h.category || 'Custom'}</div><div class="brief-block">${escHtml(h.brief || '').replace(/\[DARK WEB\]/g,'<span class="dark-tag">[DARK WEB]</span>')}</div>`);
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function setStream(html) { document.getElementById('stream').innerHTML = html; }
+
+function setStatus(feed) {
+  const pill = document.getElementById('statusPill');
+  pill.textContent = feed.running ? 'RUNNING' : 'IDLE';
+  pill.className = 'pill' + (feed.running ? ' running' : '');
+  document.getElementById('phaseText').textContent = feed.phase || 'Ready';
+  document.getElementById('sourcesNum').textContent = feed.sources_found ?? '—';
+  document.getElementById('docsNum').textContent = feed.docs_kept ?? '—';
+  document.getElementById('timeNum').textContent = feed.elapsed ? `${feed.elapsed}s` : '—';
+}
+
+function runCategory(key) {
+  if (es) { es.close(); es = null; }
+  currentCat = key;
+
+  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('active'));
+  if (key !== 'auto') document.getElementById(`cat-${key}`)?.classList.add('active');
+
+  // Trigger run
+  fetch('/nub/intel/run', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ category: key, use_tor: useTor })
+  });
+
+  // Stream status updates
+  setStream('<div class="phase-line">⚡ Launching NUB agent...</div>');
+  es = new EventSource('/nub/intel/stream');
+  es.onmessage = (e) => {
+    const feed = JSON.parse(e.data);
+    setStatus(feed);
+
+    let html = `<div class="phase-line">[ ${feed.phase || 'running'} ]</div>`;
+    if (useTor && feed.running) html += `<div class="tor-badge">🧅 Tor active — dark web included</div>`;
+    if (feed.brief) {
+      html += `<div class="brief-block">${escHtml(feed.brief).replace(/\[DARK WEB\]/g,'<span class="dark-tag">[DARK WEB]</span>')}</div>`;
+    } else if (feed.query) {
+      html += `<div style="color:var(--muted);font-size:0.78rem;margin-top:8px">🔍 Query: ${escHtml(feed.query)}</div>`;
+      html += `<div style="color:var(--muted);font-size:0.78rem;margin-top:4px">Sources found: ${feed.sources_found || '...'} &nbsp;|&nbsp; Kept: ${feed.docs_kept || '...'}</div>`;
+    }
+    setStream(html);
+
+    if (!feed.running) {
+      es.close(); es = null;
+      loadHistory();
+    }
+  };
+}
+
+loadCategories();
+loadHistory();
+
+// Poll feed on load in case a run is already active
+fetch('/nub/intel/feed').then(r=>r.json()).then(f => {
+  setStatus(f);
+  if (f.running) runCategory(f.category || 'auto');
+});
+</script>
+</body>
+</html>

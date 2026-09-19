@@ -285,6 +285,60 @@ app.get('/nub', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'nub.html'));
 });
 
+// ── NUB Intel Dashboard routes ────────────────────────────────────────────────
+const NUB_DIR      = '/root/nub-agent';
+const NUB_FEED     = path.join(NUB_DIR, 'feed.json');
+const NUB_HISTORY  = path.join(NUB_DIR, 'history.json');
+const NUB_CATS     = path.join(NUB_DIR, 'categories.json');
+
+app.get('/nub/intel', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'nub-intel.html'));
+});
+
+app.get('/nub/intel/feed', requireAuth, (req, res) => {
+  try { res.json(JSON.parse(fs.readFileSync(NUB_FEED, 'utf8'))); }
+  catch { res.json({ running: false, phase: 'idle', brief: null }); }
+});
+
+app.get('/nub/intel/history', requireAuth, (req, res) => {
+  try { res.json(JSON.parse(fs.readFileSync(NUB_HISTORY, 'utf8'))); }
+  catch { res.json([]); }
+});
+
+app.get('/nub/intel/categories', requireAuth, (req, res) => {
+  try { res.json(JSON.parse(fs.readFileSync(NUB_CATS, 'utf8'))); }
+  catch { res.status(500).json({ error: 'categories not found' }); }
+});
+
+// SSE stream — live output while nub runs
+app.get('/nub/intel/stream', requireAuth, (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const interval = setInterval(() => {
+    try {
+      const feed = JSON.parse(fs.readFileSync(NUB_FEED, 'utf8'));
+      send(feed);
+      if (!feed.running) clearInterval(interval);
+    } catch { send({ running: false, phase: 'idle' }); }
+  }, 800);
+
+  req.on('close', () => clearInterval(interval));
+});
+
+// Trigger a nub run
+app.post('/nub/intel/run', requireAuth, (req, res) => {
+  const { category = 'auto', use_tor = true } = req.body || {};
+  const args = ['/root/nub-agent/nub.py', category];
+  if (!use_tor) args.push('--no-tor');
+  const proc = spawn('python3', args, { detached: true, stdio: 'ignore' });
+  proc.unref();
+  res.json({ ok: true, category, pid: proc.pid });
+});
+
 app.get('/setup', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'setup.html'));
 });
@@ -473,7 +527,7 @@ app.post('/nub/pm2/:name/:action', requireAuth, (req, res) => {
 app.post('/nub/search', requireAuth, (req, res) => {
   const { query } = req.body || {};
   if (!query) return res.status(400).json({ ok: false, error: 'query required' });
-  execFile('python3', ['/root/.openclaw/workspace/ddg_search.py', ...query.trim().split(/\s+/)], { timeout: 20000 }, (err, stdout) => {
+  execFile('python3', ['/root/.openclaw/workspace/ddg_search.py', query.trim()], { timeout: 20000 }, (err, stdout) => {
     try { res.json({ ok: true, ...JSON.parse(stdout) }); }
     catch { res.json({ ok: false, error: err?.message||'search failed', raw: stdout }); }
   });
@@ -483,7 +537,7 @@ app.post('/nub/search', requireAuth, (req, res) => {
 app.post('/nub/ollama', requireAuth, (req, res) => {
   const { prompt } = req.body || {};
   if (!prompt) return res.status(400).json({ ok: false, error: 'prompt required' });
-  execFile('python3', ['/root/.openclaw/workspace/ollama_think.py', ...prompt.trim().split(/\s+/)], { timeout: 40000 }, (err, stdout) => {
+  execFile('python3', ['/root/.openclaw/workspace/ollama_think.py', prompt.trim()], { timeout: 40000 }, (err, stdout) => {
     try { res.json({ ok: true, ...JSON.parse(stdout) }); }
     catch { res.json({ ok: false, error: err?.message||'ollama failed' }); }
   });
@@ -516,8 +570,15 @@ app.post('/nub/whois', requireAuth, (req, res) => {
   const { target } = req.body || {};
   if (!target) return res.status(400).json({ ok: false, error: 'target required' });
   const clean = target.replace(/[^a-zA-Z0-9.\-]/g,'');
-  exec(`whois ${clean} 2>/dev/null | head -50 && echo "---DNS---" && dig ${clean} ANY +short 2>/dev/null | head -20`, { timeout: 15000 }, (err, stdout) => {
-    res.json({ ok: true, target: clean, output: stdout.trim() });
+  if (!clean) return res.status(400).json({ ok: false, error: 'Invalid target' });
+  let combined = '';
+  execFile('whois', [clean], { timeout: 8000 }, (e1, whoisOut) => {
+    combined += (whoisOut || '').split('\n').slice(0, 50).join('\n');
+    combined += '\n---DNS---\n';
+    execFile('dig', [clean, 'ANY', '+short'], { timeout: 5000 }, (e2, digOut) => {
+      combined += (digOut || '').split('\n').slice(0, 20).join('\n');
+      res.json({ ok: true, target: clean, output: combined.trim() });
+    });
   });
 });
 
@@ -649,22 +710,36 @@ app.post('/cameras/hls/start', requireAuth, (req, res) => {
   const { id, ip, port, path: camPath } = req.body;
   if (!id || !ip) return res.status(400).json({ ok: false, error: 'id and ip required' });
   if (hlsJobs[id]) return res.json({ ok: true, message: 'Already running' });
-  const rtspUrl = `rtsp://${ip}:${port||554}${camPath||'/stream1'}`;
-  const outDir = path.join(HLS_DIR, id);
+  const ipRe = /^(\d{1,3}\.){3}\d{1,3}$/;
+  const portNum = parseInt(port) || 554;
+  if (!ipRe.test(ip) || portNum < 1 || portNum > 65535) {
+    return res.status(400).json({ ok: false, error: 'Invalid IP or port' });
+  }
+  const safeCamPath = (camPath || '/stream1').replace(/[^a-zA-Z0-9/._?=&-]/g, '');
+  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '');
+  const rtspUrl = `rtsp://${ip}:${portNum}${safeCamPath}`;
+  const outDir = path.join(HLS_DIR, safeId);
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-  const proc = exec(
-    `ffmpeg -rtsp_transport tcp -i "${rtspUrl}" -c:v copy -c:a aac -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments "${outDir}/stream.m3u8"`,
-    { timeout: 0 }
-  );
-  hlsJobs[id] = { proc, dir: outDir };
-  proc.on('exit', () => delete hlsJobs[id]);
-  setTimeout(() => res.json({ ok: true, hlsUrl: `/cameras/hls/${id}/stream.m3u8` }), 3000);
+  const proc = spawn('ffmpeg', [
+    '-rtsp_transport', 'tcp', '-i', rtspUrl,
+    '-c:v', 'copy', '-c:a', 'aac', '-f', 'hls',
+    '-hls_time', '2', '-hls_list_size', '5', '-hls_flags', 'delete_segments',
+    `${outDir}/stream.m3u8`
+  ], { timeout: 0 });
+  hlsJobs[safeId] = { proc, dir: outDir };
+  proc.on('exit', () => delete hlsJobs[safeId]);
+  setTimeout(() => res.json({ ok: true, hlsUrl: `/cameras/hls/${safeId}/stream.m3u8` }), 3000);
 });
 
 // Serve HLS segments
 app.use('/cameras/hls', requireAuth, (req, res, next) => {
   const filePath = path.join(HLS_DIR, req.path);
-  if (!filePath.startsWith(HLS_DIR)) return res.status(403).end();
+  const normalizedBase = path.resolve(HLS_DIR) + path.sep;
+  if (!path.resolve(filePath).startsWith(normalizedBase)) return res.status(403).end();
+  try {
+    const real = fs.realpathSync(filePath);
+    if (!real.startsWith(normalizedBase)) return res.status(403).end();
+  } catch { return res.status(404).end(); }
   res.sendFile(filePath, err => { if (err) next(); });
 });
 

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NUB — Your Own Sovereign AI Operating System</title>
+<meta name="description" content="NUB is a self-hosted AI business OS. One-shot install on any Debian box. Telegram-native, MCP-compliant, sovereign. From Not So Holdings.">
+<meta property="og:title" content="NUB — Sovereign AI Business OS">
+<meta property="og:description" content="Self-hosted. Telegram-native. Built to run a business while you sleep.">
+<meta property="og:type" content="website">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#05060A; --surface:rgba(255,255,255,.04); --border:rgba(255,255,255,.08);
+    --purple:#7c3aed; --cyan:#06b6d4; --green:#10b981;
+    --white:#F1F5F9; --muted:#64748b; --dim:#94a3b8;
+  }
+  html,body{background:var(--bg);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  body{min-height:100vh;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px}
+
+  /* glow background */
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(ellipse 800px 600px at 20% -10%,rgba(124,58,237,.18),transparent 60%),
+               radial-gradient(ellipse 600px 500px at 90% 10%,rgba(6,182,212,.15),transparent 60%),
+               radial-gradient(ellipse 700px 500px at 50% 110%,rgba(16,185,129,.10),transparent 60%);}
+  main{position:relative;z-index:1}
+
+  /* nav */
+  nav{padding:22px 0;display:flex;justify-content:space-between;align-items:center}
+  .brand{font-weight:900;font-size:1.25rem;letter-spacing:-.02em;
+    background:linear-gradient(135deg,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .brand-sub{color:var(--muted);font-size:.72rem;font-weight:500;margin-left:8px;letter-spacing:.1em;text-transform:uppercase}
+  .nav-links{display:flex;gap:24px;font-size:.92rem;color:var(--dim)}
+  .nav-links a:hover{color:var(--white)}
+
+  /* hero */
+  .hero{padding:72px 0 48px;text-align:center}
+  .eyebrow{display:inline-block;padding:6px 14px;border:1px solid rgba(124,58,237,.35);border-radius:99px;
+    background:rgba(124,58,237,.08);font-size:.74rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+    color:#c4b5fd;margin-bottom:24px}
+  h1{font-size:clamp(2.2rem,6vw,4rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin-bottom:20px}
+  h1 span{background:linear-gradient(135deg,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .lede{font-size:clamp(1.05rem,2vw,1.25rem);color:var(--dim);max-width:680px;margin:0 auto 40px;line-height:1.55}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-block;padding:14px 28px;border-radius:12px;font-weight:700;font-size:.98rem;transition:transform .15s,box-shadow .15s;border:1px solid transparent;cursor:pointer}
+  .btn-primary{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;box-shadow:0 8px 32px rgba(124,58,237,.35)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(124,58,237,.45)}
+  .btn-ghost{background:var(--surface);border-color:var(--border);color:var(--white)}
+  .btn-ghost:hover{background:rgba(255,255,255,.08)}
+
+  /* social proof */
+  .stack{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:32px;font-size:.78rem;color:var(--muted)}
+  .stack span{padding:4px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px}
+
+  /* sections */
+  section{padding:64px 0}
+  section h2{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:800;letter-spacing:-.02em;text-align:center;margin-bottom:14px}
+  section .sub{text-align:center;color:var(--dim);max-width:560px;margin:0 auto 48px}
+
+  /* features grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px 24px;transition:border-color .2s,transform .2s}
+  .card:hover{border-color:rgba(124,58,237,.4);transform:translateY(-2px)}
+  .card .icon{font-size:1.6rem;margin-bottom:14px;display:block}
+  .card h3{font-size:1.08rem;font-weight:700;margin-bottom:8px}
+  .card p{color:var(--dim);font-size:.92rem;line-height:1.55}
+
+  /* pricing */
+  .price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:900px;margin:0 auto}
+  .price{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px 28px;display:flex;flex-direction:column}
+  .price.featured{border-color:rgba(124,58,237,.5);background:linear-gradient(180deg,rgba(124,58,237,.08),rgba(6,182,212,.04));position:relative;transform:translateY(-4px)}
+  .price.featured::before{content:"MOST CHOSEN";position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:4px 14px;border-radius:99px;font-size:.66rem;font-weight:700;letter-spacing:.1em}
+  .price h3{font-size:1.15rem;font-weight:700;margin-bottom:6px}
+  .price .tier-sub{font-size:.84rem;color:var(--muted);margin-bottom:20px}
+  .price .amount{font-size:2.4rem;font-weight:900;letter-spacing:-.02em}
+  .price .amount-sub{color:var(--muted);font-size:.82rem;margin-bottom:24px}
+  .price ul{list-style:none;margin-bottom:28px;flex:1}
+  .price li{padding:8px 0;color:var(--dim);font-size:.92rem;display:flex;gap:10px;align-items:flex-start}
+  .price li::before{content:"✓";color:var(--green);font-weight:700;flex-shrink:0}
+  .price .btn{width:100%;text-align:center}
+
+  /* footer */
+  footer{padding:48px 0 32px;border-top:1px solid var(--border);margin-top:48px;text-align:center;color:var(--muted);font-size:.85rem}
+  footer a{color:var(--dim)}
+  footer a:hover{color:var(--white)}
+
+  /* terminal demo */
+  .terminal{background:#0A0A12;border:1px solid var(--border);border-radius:14px;padding:20px 24px;font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:.85rem;max-width:680px;margin:48px auto 0;text-align:left;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .terminal .prompt{color:#a855f7}
+  .terminal .cmd{color:#e2e8f0}
+  .terminal .out{color:#10b981}
+  .terminal .dim{color:var(--muted)}
+  .terminal .line{padding:3px 0}
+
+  @media(max-width:640px){
+    .nav-links{display:none}
+    .hero{padding:48px 0 32px}
+    section{padding:48px 0}
+    .price.featured{transform:none}
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="container">
+    <nav>
+      <div>
+        <span class="brand">NUB ⚡</span>
+        <span class="brand-sub">by Not So Holdings</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="https://t.me/Buhddie_bot" target="_blank" rel="noopener">Try the Bot</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <span class="eyebrow">Sovereign · Self-hosted · Telegram-native</span>
+      <h1>Your own <span>AI operating system</span><br>that runs a business.</h1>
+      <p class="lede">NUB is a one-shot installable AI OS. Plug it into a Debian box, an Android tablet, or a $50 VPS and it manages your workflows, runs OSINT, automates content, handles payments, and talks to you on Telegram. You own the keys. You own the data.</p>
+      <div class="cta-row">
+        <a href="/buy/installer" class="btn btn-primary">Get NUB Installer — $197</a>
+        <a href="https://t.me/Buhddie_bot" target="_blank" rel="noopener" class="btn btn-ghost">Try the live bot →</a>
+      </div>
+      <div class="stack">
+        <span>OpenClaw MCP</span><span>Claude Sonnet 4.6</span><span>Haiku 4.5</span><span>Opus 4.7</span><span>n8n</span><span>Ollama</span><span>Notion</span><span>Telegram</span><span>Discord</span>
+      </div>
+
+      <div class="terminal">
+        <div class="line"><span class="prompt">you ▸</span> <span class="cmd">/nub status</span></div>
+        <div class="line"><span class="out">⚡ NUB online · 9 services healthy · 19 tools registered</span></div>
+        <div class="line"><span class="dim">  ollama · openclaw · n8n · nsai-portal · privacy-shield · jarvis · ...</span></div>
+        <div class="line">&nbsp;</div>
+        <div class="line"><span class="prompt">you ▸</span> <span class="cmd">/nub run "scan 192.168.1.0/24 and post a summary to Notion"</span></div>
+        <div class="line"><span class="out">→ routing to Sonnet · scanning · 14 hosts found · brief logged to Activity DB</span></div>
+        <div class="line"><span class="dim">  ✓ done in 23.4s · cost $0.012</span></div>
+      </div>
+    </section>
+  </div>
+
+  <section id="features">
+    <div class="container">
+      <h2>One install. Every superpower.</h2>
+      <p class="sub">NUB ships every tool you need to operate a one-person business on autopilot. No SaaS subscriptions. No vendor lock-in.</p>
+      <div class="grid">
+        <div class="card">
+          <span class="icon">🧠</span>
+          <h3>Tri-model routing</h3>
+          <p>Cost-optimal model selection. Haiku for fast tasks, Sonnet for code and reasoning, Opus for high-stakes intelligence. Free Ollama fallback offline.</p>
+        </div>
+        <div class="card">
+          <span class="icon">🛰️</span>
+          <h3>OSINT pipeline</h3>
+          <p>People search, breach checks, property records, plate lookups, court records — all synthesized into structured intelligence briefs by Opus.</p>
+        </div>
+        <div class="card">
+          <span class="icon">💬</span>
+          <h3>Telegram-native</h3>
+          <p>Your AI lives in your DMs. 64 commands. Voice messages. Image generation. No browser tabs to forget about.</p>
+        </div>
+        <div class="card">
+          <span class="icon">🔒</span>
+          <h3>Privacy Shield</h3>
+          <p>Automated data broker opt-outs across 40+ aggregators. Recurring breach monitoring. Your name disappears from the public web.</p>
+        </div>
+        <div class="card">
+          <span class="icon">⚙️</span>
+          <h3>n8n workflows + cron</h3>
+          <p>Schedule anything. Daily morning briefs, monthly reports, content automation, payment alerts — all running on your own box.</p>
+        </div>
+        <div class="card">
+          <span class="icon">🎚️</span>
+          <h3>Audio mastering + DAW</h3>
+          <p>NSAI Master pipeline for music producers. Submit a WAV, get a streaming-loud master back. Beat Lab web app included.</p>
+        </div>
+        <div class="card">
+          <span class="icon">📡</span>
+          <h3>Camera & netscan</h3>
+          <p>Auto-discover RTSP/MJPEG cameras on your LAN. Live MJPEG/HLS proxying through the portal. Nmap-powered subnet awareness.</p>
+        </div>
+        <div class="card">
+          <span class="icon">📓</span>
+          <h3>Notion as memory</h3>
+          <p>Every action logs to your Notion Activity DB. NUB remembers what it did yesterday and uses it as context tomorrow.</p>
+        </div>
+        <div class="card">
+          <span class="icon">🪙</span>
+          <h3>Revenue rails built-in</h3>
+          <p>Coin appraisal app, Gumroad integration, Coinbase Commerce, Stripe — point NUB at a niche and it starts earning.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="container">
+      <h2>Pricing</h2>
+      <p class="sub">One-time purchase. Lifetime updates. No subscriptions. Your hardware, your bill.</p>
+      <div class="price-grid">
+        <div class="price">
+          <h3>Installer</h3>
+          <div class="tier-sub">Solo operator</div>
+          <div class="amount">$197</div>
+          <div class="amount-sub">one-time</div>
+          <ul>
+            <li>NUB one-shot installer (Debian / Termux PRoot / VPS)</li>
+            <li>OpenClaw MCP gateway + 19 tools</li>
+            <li>Telegram + Discord channels</li>
+            <li>Ollama local LLM included</li>
+            <li>Bring your own Anthropic key</li>
+            <li>Email support</li>
+            <li>Lifetime updates</li>
+          </ul>
+          <a href="/buy/installer" class="btn btn-ghost">Get Installer →</a>
+        </div>
+
+        <div class="price featured">
+          <h3>Installer + Onboarding</h3>
+          <div class="tier-sub">Done-with-you</div>
+          <div class="amount">$297</div>
+          <div class="amount-sub">one-time</div>
+          <ul>
+            <li>Everything in Installer</li>
+            <li>1 hr live onboarding (Telegram or Zoom)</li>
+            <li>Custom Notion workspace setup</li>
+            <li>Your Gumroad / Stripe / Coinbase wired in</li>
+            <li>3 custom MCP tools built to spec</li>
+            <li>Priority support · 30 days</li>
+            <li>Lifetime updates</li>
+          </ul>
+          <a href="/buy/onboarding" class="btn btn-primary">Get Onboarding →</a>
+        </div>
+
+        <div class="price">
+          <h3>Sovereign</h3>
+          <div class="tier-sub">Operator + business</div>
+          <div class="amount">Talk to us</div>
+          <div class="amount-sub">custom</div>
+          <ul>
+            <li>Everything in Onboarding</li>
+            <li>Hardware shipped pre-flashed</li>
+            <li>Domain + cloudflared tunnel setup</li>
+            <li>Custom OSINT pipelines</li>
+            <li>Revenue rail integration</li>
+            <li>Ongoing concierge support</li>
+            <li>White-label for agencies</li>
+          </ul>
+          <a href="https://t.me/Buhddie_bot" target="_blank" rel="noopener" class="btn btn-ghost">Open a conversation →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div>NUB · Not So Holdings LLC · <a href="mailto:nub@nsai.tech">nub@nsai.tech</a></div>
+      <div style="margin-top:8px;font-size:.78rem">Sovereign AI. Your hardware. Your keys. Your data.</div>
+    </div>
+  </footer>
+</main>
+</body>
+</html>
