@@ -1,0 +1,32 @@
+# NSAI — Not So Artificial Intelligence
+> Source: https://nsai.tech
+
+## What is NSAI?
+
+NSAI (Not So Artificial Intelligence) is a sovereign, self-hosted AI business operating system built by Not So Holdings LLC. The flagship product is **NUB** — an autonomous AI agent that runs 24/7 on any Debian-based device (VPS, Android via Termux PRoot, mini PC) and manages business operations through Telegram and Discord.
+
+## Products
+
+- **NUB Installer** ($197 one-time) — Full AI OS installer for Debian/Termux/VPS. Includes OpenClaw MCP gateway, 19+ tools, Telegram + Discord channels, Ollama local LLM.
+- **NUB Installer + Onboarding** ($297 one-time) — Includes 1hr live setup, custom Notion workspace, Gumroad/Stripe wired in, 3 custom MCP tools.
+- **Sovereign** (custom) — White-label, hardware pre-flashed, OSINT pipelines, concierge support.
+
+## Contact
+
+- Website: https://nsai.tech
+- Email: nub@nsai.tech
+- Telegram: https://t.me/Buhddie_bot
+- Gumroad: https://notsoinc.gumroad.com
+
+## Key facts
+
+- Founded by Justin Perry / Not So Holdings LLC (Florida)
+- Runs on Claude (Anthropic); supports Ollama local models and Groq
+- One-time purchase pricing, no subscription
+- Integrates with: n8n, Telegram, Discord, Gumroad, Stripe, Cloudflare
+- Self-hosted: data stays on the owner's hardware
+- Best fit: solo operators, consultants, small businesses, AI builders
+
+## Affiliate disclosure
+
+Mr. NSA (Not So Holdings LLC) lists third-party partner offers (wellness/telehealth) at https://nsai.tech/offers. These are affiliate links; Not So Holdings may earn a commission. Not medical advice.

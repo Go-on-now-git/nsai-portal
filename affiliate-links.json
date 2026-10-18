@@ -1,0 +1,55 @@
+{
+  "note": "Tracking URLs filled in from Katalys once joins approve. Entries with PENDING urls are skipped by the prompt loader.",
+  "offers": [
+    {
+      "blurb": "NAD+ therapy for energy and longevity",
+      "keywords": "nad, longevity, energy, aging",
+      "name": "Embody NAD+",
+      "payout": "$150",
+      "url": "PENDING"
+    },
+    {
+      "blurb": "prescription weight-loss medication",
+      "keywords": "weight loss, glp-1, rx, obesity",
+      "name": "SnagRX",
+      "payout": "$150",
+      "url": "PENDING"
+    },
+    {
+      "blurb": "research peptides for wellness",
+      "keywords": "peptides, wellness, bpc, tb500",
+      "name": "Collective Peptides",
+      "payout": "$150",
+      "url": "PENDING"
+    },
+    {
+      "blurb": "GLP-1 medical weight-loss program",
+      "keywords": "weight loss, glp-1, semaglutide, telehealth",
+      "name": "He & She MD",
+      "payout": "$350",
+      "url": "PENDING"
+    },
+    {
+      "blurb": "cardiometabolic optimization membership",
+      "keywords": "metabolic, heart health, wellness membership",
+      "name": "GoodLife Health",
+      "payout": "$400",
+      "url": "PENDING"
+    },
+    {
+      "blurb": "CBD products",
+      "keywords": "cbd, hemp, anxiety, sleep, pain",
+      "name": "Extract Labs",
+      "payout": "15%",
+      "url": "https://track.revoffers.com/aff_c?offer_id=103&aff_id=12946"
+    },
+    {
+      "blurb": "anti-aging telehealth prescriptions",
+      "keywords": "anti-aging, longevity, telehealth, rx",
+      "name": "telos rx",
+      "payout": "$200",
+      "url": "PENDING"
+    }
+  ],
+  "updated": "2026-09-23"
+}

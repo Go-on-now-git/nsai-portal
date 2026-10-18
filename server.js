@@ -81,6 +81,65 @@ function requireAuth(req, res, next) {
 }
 
 // ── Public routes (no auth) ───────────────────────────────────────────────────
+
+// AI crawler discovery files — always public, no auth
+app.get('/llms.txt', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(__dirname, 'llms.txt'));
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.send(`User-agent: *
+Allow: /
+Allow: /llms.txt
+
+# AI crawlers — welcome, full access
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+Sitemap: https://nsai.tech/sitemap.xml
+`);
+});
+
+// Minimal sitemap for crawler discovery
+app.get('/sitemap.xml', (req, res) => {
+  res.setHeader('Content-Type', 'application/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://nsai.tech/</loc><priority>1.0</priority></url>
+  <url><loc>https://nsai.tech/llms.txt</loc><priority>0.9</priority></url>
+  <url><loc>https://nsai.tech/blog/</loc><priority>0.8</priority></url>
+  <url><loc>https://nsai.tech/offers</loc><priority>0.8</priority></url>
+  <url><loc>https://nsai.tech/blog/turboquant-diet.html</loc><priority>0.7</priority></url>
+  <url><loc>https://nsai.tech/blog/opus-upgrade.html</loc><priority>0.7</priority></url>
+  <url><loc>https://nsai.tech/blog/deepseek-machine.html</loc><priority>0.7</priority></url>
+  <url><loc>https://nsai.tech/blog/machines-never-sleep.html</loc><priority>0.7</priority></url>
+</urlset>`);
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'online', system: 'NSAI', version: '2.0.0', uptime: process.uptime() });
 });
@@ -88,6 +147,19 @@ app.get('/health', (req, res) => {
 // Public marketing site at root — sovereign SaaS landing
 app.get(['/', '/saas', '/pricing'], (req, res) => {
   res.sendFile(path.join(__dirname, 'saas.html'));
+});
+
+// Public blog + partner offers — no auth (crawler + visitor accessible)
+app.get('/blog', (req, res) => {
+  res.sendFile(path.join(__dirname, 'blog', 'index.html'));
+});
+app.get('/blog/:post', (req, res) => {
+  const post = path.basename(req.params.post);
+  if (!/^[a-z0-9-]+\.html$/.test(post)) return res.status(404).send('Not found');
+  res.sendFile(path.join(__dirname, 'blog', post));
+});
+app.get(['/offers', '/offers.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'offers.html'));
 });
 
 // Buy redirects — point at Gumroad when published, fall back to Telegram for pre-orders
@@ -795,7 +867,7 @@ No filler. No enthusiasm theater. Just facts and action.${intent ? `\n\nSession 
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, process.env.HOST || '127.0.0.1', () => {
   console.log(`⚡ NSAI Portal running on http://0.0.0.0:${PORT}`);
   console.log(`🔒 PIN gate active — set PORTAL_PIN in /root/.env.nsai to change`);
 });

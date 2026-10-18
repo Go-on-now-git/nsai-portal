@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N-Track Studio — NSAI Setup Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #05050f;
+    --surface: #0d0d1e;
+    --card: #111126;
+    --border: #1e1e40;
+    --green: #00ff88;
+    --cyan: #00d4ff;
+    --purple: #a855f7;
+    --orange: #ff6b35;
+    --yellow: #ffd60a;
+    --red: #ff4757;
+    --text: #e8e8ff;
+    --muted: #7878aa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 36px;
+    padding: 32px 20px;
+    background: linear-gradient(135deg, #0d0d1e 0%, #1a0a2e 50%, #0d1a2e 100%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at center, rgba(0,255,136,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .header .badge {
+    display: inline-block;
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+  }
+  .header h1 {
+    font-size: clamp(26px, 5vw, 42px);
+    font-weight: 900;
+    background: linear-gradient(90deg, var(--green), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+  .header p {
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 400;
+  }
+  .header .version {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .grid-full { grid-column: 1 / -1; }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .card-header h2 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .card-body { padding: 16px 20px; }
+
+  /* SETTING ROW */
+  .setting {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    gap: 12px;
+  }
+  .setting:last-child { border-bottom: none; }
+  .setting-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 400;
+    flex: 1;
+  }
+  .setting-note {
+    font-size: 11px;
+    color: rgba(120,120,170,0.7);
+    margin-top: 2px;
+  }
+  .setting-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .v-green  { background: rgba(0,255,136,0.12); color: var(--green); }
+  .v-cyan   { background: rgba(0,212,255,0.12); color: var(--cyan); }
+  .v-purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+  .v-orange { background: rgba(255,107,53,0.12); color: var(--orange); }
+  .v-yellow { background: rgba(255,214,10,0.12); color: var(--yellow); }
+  .v-red    { background: rgba(255,71,87,0.12); color: var(--red); }
+
+  /* ACCENT COLORS PER SECTION */
+  .accent-green  .card-icon { background: rgba(0,255,136,0.12); }
+  .accent-cyan   .card-icon { background: rgba(0,212,255,0.12); }
+  .accent-purple .card-icon { background: rgba(168,85,247,0.12); }
+  .accent-orange .card-icon { background: rgba(255,107,53,0.12); }
+  .accent-yellow .card-icon { background: rgba(255,214,10,0.12); }
+  .accent-red    .card-icon { background: rgba(255,71,87,0.12); }
+  .accent-green  h2 { color: var(--green); }
+  .accent-cyan   h2 { color: var(--cyan); }
+  .accent-purple h2 { color: var(--purple); }
+  .accent-orange h2 { color: var(--orange); }
+  .accent-yellow h2 { color: var(--yellow); }
+  .accent-red    h2 { color: var(--red); }
+  .accent-green  { border-top: 2px solid var(--green); }
+  .accent-cyan   { border-top: 2px solid var(--cyan); }
+  .accent-purple { border-top: 2px solid var(--purple); }
+  .accent-orange { border-top: 2px solid var(--orange); }
+  .accent-yellow { border-top: 2px solid var(--yellow); }
+  .accent-red    { border-top: 2px solid var(--red); }
+
+  /* STEPS */
+  .steps { list-style: none; }
+  .steps li {
+    display: flex;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* HIGHLIGHT BOX */
+  .highlight-box {
+    background: rgba(0,255,136,0.06);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .highlight-box p {
+    font-size: 13px;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .highlight-box span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .warning-box {
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.25);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--orange);
+    line-height: 1.5;
+  }
+  .warning-box strong { display: block; margin-bottom: 2px; }
+
+  /* FLOW */
+  .flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  .flow-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 16px;
+  }
+
+  /* TABLE */
+  .mini-table { width: 100%; border-collapse: collapse; }
+  .mini-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .mini-table td {
+    font-size: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+  }
+  .mini-table tr:last-child td { border-bottom: none; }
+  .mini-table .td-label { color: var(--muted); padding-right: 12px; }
+  .mini-table .td-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    margin-top: 40px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .footer strong { color: var(--green); }
+
+  /* PATH */
+  .path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    background: rgba(0,212,255,0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    word-break: break-all;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    body { padding: 16px 12px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="version">v1.0 · 2026-09-20</div>
+  <div class="badge">⚡ NSAI Production</div>
+  <h1>N-Track Studio<br>Setup Guide</h1>
+  <p>432 Hz · Zoom H6 · MIDI Pack · AI Mastering Pipeline</p>
+</div>
+
+<div class="grid" style="max-width:1200px;margin:0 auto;">
+
+  <!-- 1. AUDIO ENGINE -->
+  <div class="card accent-green">
+    <div class="card-header">
+      <div class="card-icon">🎛️</div>
+      <h2>Audio Engine</h2>
+    </div>
+    <div class="card-body">
+      <div class="highlight-box">
+        <p>Settings → Audio Settings</p>
+        <span>Menu → ⚙️ → Audio</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Audio Driver</div>
+          <div class="setting-note">Best on Android 8+ (S24 Ultra = use AAudio)</div>
+        </div>
+        <span class="setting-value v-green">AAudio</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Fallback Driver</div>
+          <div class="setting-note">If AAudio causes issues</div>
+        </div>
+        <span class="setting-value v-cyan">OpenSL ES</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Sample Rate</div>
+          <div class="setting-note">Match your project & export</div>
+        </div>
+        <span class="setting-value v-green">44100 Hz</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Bit Depth</div>
+          <div class="setting-note">Required for AI mastering pipeline</div>
+        </div>
+        <span class="setting-value v-green">24-bit</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Buffer Size</div>
+          <div class="setting-note">Low latency; bump to 512 if crackling</div>
+        </div>
+        <span class="setting-value v-yellow">256 samples</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Latency</div>
+          <div class="setting-note">Target with 256 buffer @ 44100</div>
+        </div>
+        <span class="setting-value v-cyan">~5.8 ms</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Play in Background</div>
+          <div class="setting-note">Keep audio going when app minimized</div>
+        </div>
+        <span class="setting-value v-green">ON ✓</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Exclusive Mode</div>
+          <div class="setting-note">Bypasses Android mixer = lower latency</div>
+        </div>
+        <span class="setting-value v-green">ON ✓</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 432 HZ TUNING -->
+  <div class="card accent-purple">
+    <div class="card-header">
+      <div class="card-icon">🎵</div>
+      <h2>432 Hz Tuning</h2>
+    </div>
+    <div class="card-body">
+      <div class="highlight-box" style="background:rgba(168,85,247,0.06);border-color:rgba(168,85,247,0.2);">
+        <p style="color:var(--purple)">Settings → Instruments → Master Tune</p>
+        <span>Or: Track → Properties → Tune</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Master Tune</div>
+          <div class="setting-note">Converts A440 → A432 Hz</div>
+        </div>
+        <span class="setting-value v-purple">-31.76 cents</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Standard Reference</div>
+          <div class="setting-note">Default (what we're tuning FROM)</div>
+        </div>
+        <span class="setting-value v-cyan">A = 440 Hz</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Target Reference</div>
+          <div class="setting-note">Our target (432 Hz standard)</div>
+        </div>
+        <span class="setting-value v-purple">A = 432 Hz</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Apply To</div>
+          <div class="setting-note">Software instruments & synths only</div>
+        </div>
+        <span class="setting-value v-purple">All VSTi</span>
+      </div>
+      <div class="warning-box">
+        <strong>⚠️ For Suno tracks (already 432 Hz):</strong>
+        Import as audio — don't apply pitch shift again. The AI mastering pipeline handles final tuning verification.
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. RECORDING — ZOOM H6 -->
+  <div class="card accent-cyan">
+    <div class="card-header">
+      <div class="card-icon">🎤</div>
+      <h2>Recording — Zoom H6</h2>
+    </div>
+    <div class="card-body">
+      <div class="highlight-box" style="background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2);">
+        <p style="color:var(--cyan)">Connect H6 via USB-C OTG cable first</p>
+        <span>S24 Ultra → USB OTG → Zoom H6</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Input Source</div>
+          <div class="setting-note">Auto-detected when H6 connected via USB</div>
+        </div>
+        <span class="setting-value v-cyan">USB Audio</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Input Channels</div>
+          <div class="setting-note">Stereo = both XLR inputs captured</div>
+        </div>
+        <span class="setting-value v-cyan">Mono or Stereo</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Vocal Track Type</div>
+          <div class="setting-note">One mic = mono track</div>
+        </div>
+        <span class="setting-value v-cyan">Mono</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Target Recording Level</div>
+          <div class="setting-note">Peaks should NOT exceed -6 dBFS</div>
+        </div>
+        <span class="setting-value v-yellow">-18 dBFS avg</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">H6 Gain Knob</div>
+          <div class="setting-note">Start here — adjust to hit -18dBFS avg</div>
+        </div>
+        <span class="setting-value v-yellow">~50–60%</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Monitor Through N-Track</div>
+          <div class="setting-note">Hear yourself while recording</div>
+        </div>
+        <span class="setting-value v-green">ON ✓</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">H6 Zoom USB Mode</div>
+          <div class="setting-note">Set on H6 itself: Menu → USB → Audio I/F</div>
+        </div>
+        <span class="setting-value v-cyan">Audio I/F</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">H6 Sample Rate (on device)</div>
+          <div class="setting-note">Must match N-Track project rate</div>
+        </div>
+        <span class="setting-value v-cyan">44100 Hz</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MIDI SETTINGS -->
+  <div class="card accent-orange">
+    <div class="card-header">
+      <div class="card-icon">🎹</div>
+      <h2>MIDI — NSAI MIDI Pack</h2>
+    </div>
+    <div class="card-body">
+      <div class="highlight-box" style="background:rgba(255,107,53,0.06);border-color:rgba(255,107,53,0.2);">
+        <p style="color:var(--orange)">Settings → MIDI Settings</p>
+        <span>Then: Track → Add Track → MIDI Track</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">MIDI Input</div>
+        </div>
+        <span class="setting-value v-orange">ON ✓</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">MIDI Output</div>
+        </div>
+        <span class="setting-value v-orange">ON ✓</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">MIDI File Type</div>
+          <div class="setting-note">NSAI MIDI pack uses Type 0 (single track)</div>
+        </div>
+        <span class="setting-value v-orange">Type 0</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Default MIDI Channel</div>
+        </div>
+        <span class="setting-value v-orange">Ch 1</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Quantization</div>
+          <div class="setting-note">For recording new MIDI (not importing)</div>
+        </div>
+        <span class="setting-value v-orange">1/16</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">MIDI Pack Location</div>
+          <div class="setting-note">Import from here in N-Track file browser</div>
+        </div>
+        <span class="setting-value v-orange" style="font-size:10px;">/sdcard/Download/</span>
+      </div>
+      <div style="margin-top:14px; font-size:12px; color:var(--muted); line-height:1.6;">
+        <strong style="color:var(--orange);">To import MIDI:</strong><br>
+        Track → Add MIDI Track → Import → navigate to<br>
+        <span class="path">/sdcard/Download/nsai-midi-pack/</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. PROJECT SETTINGS -->
+  <div class="card accent-yellow">
+    <div class="card-header">
+      <div class="card-icon">📁</div>
+      <h2>Project Template Settings</h2>
+    </div>
+    <div class="card-body">
+      <div class="highlight-box" style="background:rgba(255,214,10,0.06);border-color:rgba(255,214,10,0.2);">
+        <p style="color:var(--yellow)">File → New Song → Settings</p>
+        <span>Set these BEFORE adding tracks</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Tempo</div><div class="setting-note">Adjust per track — start here</div></div>
+        <span class="setting-value v-yellow">140 BPM</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Time Signature</div></div>
+        <span class="setting-value v-yellow">4/4</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Project Sample Rate</div></div>
+        <span class="setting-value v-yellow">44100 Hz</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Project Bit Depth</div></div>
+        <span class="setting-value v-yellow">24-bit</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Default Save Location</div></div>
+        <span class="setting-value v-yellow" style="font-size:10px;">/sdcard/Music/NSAI/</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Auto-Save</div><div class="setting-note">Every 5 min</div></div>
+        <span class="setting-value v-green">ON ✓</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Undo History</div></div>
+        <span class="setting-value v-yellow">50 steps</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. TRACK LAYOUT -->
+  <div class="card accent-cyan">
+    <div class="card-header">
+      <div class="card-icon">🎚️</div>
+      <h2>Track Layout — Standard Build</h2>
+    </div>
+    <div class="card-body">
+      <table class="mini-table">
+        <tr><th>Track</th><th>Type</th><th>Settings</th></tr>
+        <tr>
+          <td class="td-label">Beat / Loop</td>
+          <td><span class="setting-value v-orange" style="display:inline-block;margin:2px 0;">Audio</span></td>
+          <td class="td-val" style="color:var(--muted)">Stereo · Suno import</td>
+        </tr>
+        <tr>
+          <td class="td-label">Melody</td>
+          <td><span class="setting-value v-orange" style="display:inline-block;margin:2px 0;">MIDI</span></td>
+          <td class="td-val" style="color:var(--muted)">Ch 1 · VSTi synth</td>
+        </tr>
+        <tr>
+          <td class="td-label">Bass</td>
+          <td><span class="setting-value v-orange" style="display:inline-block;margin:2px 0;">MIDI</span></td>
+          <td class="td-val" style="color:var(--muted)">Ch 2 · bass patch</td>
+        </tr>
+        <tr>
+          <td class="td-label">Drums</td>
+          <td><span class="setting-value v-cyan" style="display:inline-block;margin:2px 0;">Audio</span></td>
+          <td class="td-val" style="color:var(--muted)">One-shots import</td>
+        </tr>
+        <tr>
+          <td class="td-label">Vocals</td>
+          <td><span class="setting-value v-green" style="display:inline-block;margin:2px 0;">Audio</span></td>
+          <td class="td-val" style="color:var(--muted)">Mono · H6 input</td>
+        </tr>
+        <tr>
+          <td class="td-label">Master Bus</td>
+          <td><span class="setting-value v-purple" style="display:inline-block;margin:2px 0;">Stereo</span></td>
+          <td class="td-val" style="color:var(--muted)">Headroom only</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 7. EXPORT / MASTERING -->
+  <div class="card accent-red">
+    <div class="card-header">
+      <div class="card-icon">🔥</div>
+      <h2>Export → AI Mastering Pipeline</h2>
+    </div>
+    <div class="card-body">
+      <div class="highlight-box" style="background:rgba(255,71,87,0.06);border-color:rgba(255,71,87,0.2);">
+        <p style="color:var(--red)">File → Export Mix / Bounce</p>
+        <span>These settings feed directly into nsai_master.py</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Format</div></div>
+        <span class="setting-value v-red">WAV</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Bit Depth</div></div>
+        <span class="setting-value v-red">24-bit</span>
+      </div>
+      <div class="setting">
+        <div><div class="setting-label">Sample Rate</div></div>
+        <span class="setting-value v-red">44100 Hz</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Normalize</div>
+          <div class="setting-note">DON'T normalize — AI mastering needs headroom</div>
+        </div>
+        <span class="setting-value v-red">OFF ✗</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Peak Headroom</div>
+          <div class="setting-note">Leave room for mastering chain</div>
+        </div>
+        <span class="setting-value v-yellow">-3 dBFS</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Dither</div>
+          <div class="setting-note">Not needed at 24-bit</div>
+        </div>
+        <span class="setting-value v-red">OFF ✗</span>
+      </div>
+      <div class="setting">
+        <div>
+          <div class="setting-label">Output Folder</div>
+          <div class="setting-note">Where nsai_master.py picks it up</div>
+        </div>
+        <span class="setting-value v-cyan" style="font-size:10px;">/sdcard/Download/</span>
+      </div>
+
+      <!-- MASTERING COMMAND -->
+      <div style="margin-top:16px; background:var(--surface); border-radius:10px; padding:14px; border:1px solid var(--border);">
+        <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:700;">Run AI Mastering After Export</div>
+        <code style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--green); line-height:1.7; display:block; word-break:break-all;">
+          python3 /root/nsai-master/master.py<br>
+          &nbsp;&nbsp;/sdcard/Download/[song].wav<br>
+          &nbsp;&nbsp;--style "dark trap"<br>
+          &nbsp;&nbsp;--target-lufs -9<br>
+          &nbsp;&nbsp;--432hz
+        </code>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. MASTER BUS CHAIN -->
+  <div class="card accent-purple">
+    <div class="card-header">
+      <div class="card-icon">⚡</div>
+      <h2>Master Bus Chain (Inside N-Track)</h2>
+    </div>
+    <div class="card-body">
+      <div style="font-size:12px; color:var(--muted); margin-bottom:14px;">Keep this minimal — the AI master does the heavy lifting. Just control headroom.</div>
+      <div class="flow">
+        <div class="flow-step" style="border-color:rgba(168,85,247,0.3); color:var(--purple);">EQ<br><small style="color:var(--muted);">High-pass 40Hz</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:rgba(168,85,247,0.3); color:var(--purple);">Comp<br><small style="color:var(--muted);">2:1 · gentle</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:rgba(255,71,87,0.3); color:var(--red);">Limiter<br><small style="color:var(--muted);">-3 dBFS ceil</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:rgba(0,255,136,0.3); color:var(--green);">Export<br><small style="color:var(--muted);">24-bit WAV</small></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="setting">
+          <div><div class="setting-label">EQ → High-pass Filter</div></div>
+          <span class="setting-value v-purple">40 Hz / 12dB oct</span>
+        </div>
+        <div class="setting">
+          <div><div class="setting-label">Compressor Ratio</div></div>
+          <span class="setting-value v-purple">2:1</span>
+        </div>
+        <div class="setting">
+          <div><div class="setting-label">Compressor Threshold</div></div>
+          <span class="setting-value v-purple">-12 dBFS</span>
+        </div>
+        <div class="setting">
+          <div><div class="setting-label">Attack / Release</div></div>
+          <span class="setting-value v-purple">20ms / 200ms</span>
+        </div>
+        <div class="setting">
+          <div><div class="setting-label">Limiter Ceiling</div></div>
+          <span class="setting-value v-red">-3.0 dBFS</span>
+        </div>
+        <div class="setting">
+          <div><div class="setting-label">Makeup Gain</div></div>
+          <span class="setting-value v-yellow">+2 dB</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. ONE-SHOTS IMPORT -->
+  <div class="card accent-orange">
+    <div class="card-header">
+      <div class="card-icon">🥁</div>
+      <h2>One-Shots — NSAI Drum Pack</h2>
+    </div>
+    <div class="card-body">
+      <ul class="steps">
+        <li>
+          <div class="step-num" style="background:rgba(255,107,53,0.15);color:var(--orange);">1</div>
+          <div>Generate one-shots: <span class="path">python3 /root/music-plugins/midi-pack/build_oneshots.py</span> — creates 47 WAV samples</div>
+        </li>
+        <li>
+          <div class="step-num" style="background:rgba(255,107,53,0.15);color:var(--orange);">2</div>
+          <div>In N-Track: <strong>Add Track → Drum Machine / Sampler</strong> or import WAVs as individual audio clips</div>
+        </li>
+        <li>
+          <div class="step-num" style="background:rgba(255,107,53,0.15);color:var(--orange);">3</div>
+          <div>File browser → navigate to <span class="path">/sdcard/Download/nsai-oneshots/</span></div>
+        </li>
+        <li>
+          <div class="step-num" style="background:rgba(255,107,53,0.15);color:var(--orange);">4</div>
+          <div>Drag kick, snare, hi-hat onto separate audio tracks or into drum grid</div>
+        </li>
+        <li>
+          <div class="step-num" style="background:rgba(255,107,53,0.15);color:var(--orange);">5</div>
+          <div>All samples are pre-tuned to <strong style="color:var(--orange);">432 Hz</strong> — no pitch shift needed</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 10. WORKFLOW -->
+  <div class="card accent-green grid-full">
+    <div class="card-header">
+      <div class="card-icon">🚀</div>
+      <h2>Full Production Workflow — Start to Master</h2>
+    </div>
+    <div class="card-body">
+      <div class="flow" style="justify-content:center; flex-wrap:wrap; gap:12px; padding:16px 0;">
+        <div class="flow-step" style="border-color:rgba(0,212,255,0.3);color:var(--cyan);min-width:100px;">
+          <div style="font-size:18px;margin-bottom:4px;">🎵</div>
+          Suno Prompts<br><small style="color:var(--muted);">suno_prompts.py</small>
+        </div>
+        <div class="flow-arrow" style="font-size:24px;">→</div>
+        <div class="flow-step" style="border-color:rgba(168,85,247,0.3);color:var(--purple);min-width:100px;">
+          <div style="font-size:18px;margin-bottom:4px;">☁️</div>
+          Suno.com<br><small style="color:var(--muted);">Generate tracks</small>
+        </div>
+        <div class="flow-arrow" style="font-size:24px;">→</div>
+        <div class="flow-step" style="border-color:rgba(0,255,136,0.3);color:var(--green);min-width:100px;">
+          <div style="font-size:18px;margin-bottom:4px;">📥</div>
+          Download WAV<br><small style="color:var(--muted);">/sdcard/Download</small>
+        </div>
+        <div class="flow-arrow" style="font-size:24px;">→</div>
+        <div class="flow-step" style="border-color:rgba(255,214,10,0.3);color:var(--yellow);min-width:100px;">
+          <div style="font-size:18px;margin-bottom:4px;">🎚️</div>
+          N-Track<br><small style="color:var(--muted);">Import + arrange</small>
+        </div>
+        <div class="flow-arrow" style="font-size:24px;">→</div>
+        <div class="flow-step" style="border-color:rgba(0,212,255,0.3);color:var(--cyan);min-width:100px;">
+          <div style="font-size:18px;margin-bottom:4px;">🎤</div>
+          Record Vocals<br><small style="color:var(--muted);">Zoom H6 → USB</small>
+        </div>
+        <div class="flow-arrow" style="font-size:24px;">→</div>
+        <div class="flow-step" style="border-color:rgba(255,71,87,0.3);color:var(--red);min-width:100px;">
+          <div style="font-size:18px;margin-bottom:4px;">📤</div>
+          Export Mix<br><small style="color:var(--muted);">24-bit WAV</small>
+        </div>
+        <div class="flow-arrow" style="font-size:24px;">→</div>
+        <div class="flow-step" style="border-color:rgba(0,255,136,0.3);color:var(--green);min-width:100px;">
+          <div style="font-size:18px;margin-bottom:4px;">⚡</div>
+          AI Master<br><small style="color:var(--muted);">nsai_master.py</small>
+        </div>
+        <div class="flow-arrow" style="font-size:24px;">→</div>
+        <div class="flow-step" style="border-color:rgba(168,85,247,0.3);color:var(--purple);min-width:100px;">
+          <div style="font-size:18px;margin-bottom:4px;">🚀</div>
+          Distribute<br><small style="color:var(--muted);">Upload + release</small>
+        </div>
+      </div>
+
+      <!-- QUICK SETTINGS SUMMARY -->
+      <div style="margin-top:20px; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px;">
+        <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center;">
+          <div style="font-size:22px;margin-bottom:4px;">🎛️</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Driver</div>
+          <div style="font-size:16px;font-weight:700;color:var(--green);">AAudio</div>
+        </div>
+        <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center;">
+          <div style="font-size:22px;margin-bottom:4px;">📊</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Sample Rate</div>
+          <div style="font-size:16px;font-weight:700;color:var(--green);">44,100 Hz</div>
+        </div>
+        <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center;">
+          <div style="font-size:22px;margin-bottom:4px;">🎯</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Bit Depth</div>
+          <div style="font-size:16px;font-weight:700;color:var(--green);">24-bit</div>
+        </div>
+        <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center;">
+          <div style="font-size:22px;margin-bottom:4px;">⏱️</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Buffer</div>
+          <div style="font-size:16px;font-weight:700;color:var(--yellow);">256 samples</div>
+        </div>
+        <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center;">
+          <div style="font-size:22px;margin-bottom:4px;">🎵</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Master Tune</div>
+          <div style="font-size:16px;font-weight:700;color:var(--purple);">-31.76 cents</div>
+        </div>
+        <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center;">
+          <div style="font-size:22px;margin-bottom:4px;">📤</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Export Peak</div>
+          <div style="font-size:16px;font-weight:700;color:var(--red);">-3 dBFS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Generated by <strong>⚡ NSAI</strong> — Not So AI · Not So Holdings LLC<br>
+  <span style="color:rgba(120,120,170,0.5);">ntrack-setup.html · 2026-09-20 · #StayAbove</span>
+</div>
+
+</body>
+</html>
